@@ -51,10 +51,13 @@ pub fn filled_cells(pct: u8, width: usize) -> usize {
     (pct.min(100) as usize * width + 50) / 100
 }
 
-pub fn bar(pct: u8, s: &Style) -> String {
-    let f = filled_cells(pct, s.width);
+/// Render a bar whose length is `bar_pct` and whose fill uses an explicit
+/// 256-color. Splitting length from color lets a "remaining" bar show headroom
+/// while still coloring by the underlying danger level.
+pub fn bar_colored(bar_pct: u8, color: u8, s: &Style) -> String {
+    let f = filled_cells(bar_pct, s.width);
     let e = s.width - f;
-    let mut out = format!("\x1b[38;5;{}m", fill_color(pct, s));
+    let mut out = format!("\x1b[38;5;{}m", color);
     for _ in 0..f {
         out.push_str(&s.filled);
     }
@@ -64,6 +67,11 @@ pub fn bar(pct: u8, s: &Style) -> String {
     }
     out.push_str("\x1b[0m");
     out
+}
+
+/// Used/fullness bar: length and threshold color both track `pct`.
+pub fn bar(pct: u8, s: &Style) -> String {
+    bar_colored(pct, fill_color(pct, s), s)
 }
 
 /// Bold model-name header line.
@@ -83,6 +91,27 @@ pub fn row(label: &str, pct: Option<u8>, value: &str, s: &Style) -> String {
         "\x1b[1m{label:<8}\x1b[0m {barstr}  {dim}{pdisp}\x1b[0m  {dim}{value}\x1b[0m",
         barstr = bar(bar_pct, s),
     )
+}
+
+/// A remaining/headroom gauge row: the bar length and the `N% left` label show
+/// what is LEFT, while the color still reflects danger (driven by the underlying
+/// USED percentage — a short red bar means little left). `used` is 0..=100.
+pub fn row_remaining(label: &str, used: Option<u8>, value: &str, s: &Style) -> String {
+    let dim = format!("\x1b[38;5;{}m", s.dim);
+    let (pdisp, barstr) = match used {
+        // Pad to the same 9-char width as "NNN% left" so the value column stays
+        // aligned when a sibling row has data and this one does not.
+        None => (format!("{:>9}", "--"), bar_colored(0, s.track, s)),
+        Some(u) => {
+            let u = u.min(100);
+            let remaining = 100 - u;
+            (
+                format!("{:>3}% left", remaining),
+                bar_colored(remaining, fill_color(u, s), s),
+            )
+        }
+    };
+    format!("\x1b[1m{label:<8}\x1b[0m {barstr}  {dim}{pdisp}\x1b[0m  {dim}{value}\x1b[0m")
 }
 
 #[cfg(test)]
@@ -179,5 +208,59 @@ mod tests {
         let r = row("7d", None, "--", &s);
         assert!(r.contains("  --"));
         assert!(!r.contains('%'));
+    }
+
+    #[test]
+    fn row_remaining_shows_headroom() {
+        let s = test_style();
+        // 42% used -> 58% left, still green (danger by used% = 42 < warn_at).
+        let r = row_remaining("5h", Some(42), "2h 15m", &s);
+        assert!(r.contains("58% left"));
+        assert!(r.contains("2h 15m"));
+        assert!(r.contains("\x1b[38;5;71m")); // green fill (headroom, low danger)
+        assert_eq!(bar_colored(58, 71, &s).matches('#').count(), 7); // 58% of 12 ≈ 7 cells
+    }
+
+    #[test]
+    fn row_remaining_low_is_red() {
+        let s = test_style();
+        // 88% used -> 12% left, red (danger by used% = 88 >= crit_at).
+        let r = row_remaining("7d", Some(88), "4d 6h", &s);
+        assert!(r.contains("12% left"));
+        assert!(r.contains("\x1b[38;5;167m")); // red fill = little left + dangerous
+    }
+
+    #[test]
+    fn row_remaining_without_data() {
+        let s = test_style();
+        let r = row_remaining("5h", None, "--", &s);
+        assert!(r.contains("--"));
+        assert!(!r.contains("% left"));
+    }
+
+    #[test]
+    fn row_remaining_columns_align() {
+        let s = test_style();
+        // Visible width up to an (empty) value must match with and without data,
+        // so the value column lines up across sibling rows.
+        let visible = |x: String| -> usize {
+            let mut n = 0;
+            let mut it = x.chars().peekable();
+            while let Some(c) = it.next() {
+                if c == '\x1b' {
+                    while let Some(d) = it.next() {
+                        if d == 'm' {
+                            break;
+                        }
+                    }
+                } else {
+                    n += 1;
+                }
+            }
+            n
+        };
+        let with = visible(row_remaining("5h", Some(42), "", &s));
+        let without = visible(row_remaining("5h", None, "", &s));
+        assert_eq!(with, without, "value column must align with and without data");
     }
 }

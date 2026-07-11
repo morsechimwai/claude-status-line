@@ -9,14 +9,17 @@ Single Rust binary, no runtime dependencies.
 
 ```
 Opus 4.8 (1M context)
-Context  ████░░░░░░░░   34%  ↑280k ↓60k / 1.0m
-5h       █████░░░░░░░   42%  resets in 2h 15m
-7d       ███████████░   88%  resets in 4d 6h
+Context  ████░░░░░░░░   34%       ↑280k ↓60k / 1.0m
+5h       ███████░░░░░   58% left  2h 15m
+7d       █░░░░░░░░░░░   12% left  4d 5h
 ```
 
-The context row shows the input/output token split; the rate-limit rows count
-down to their reset. Colors, thresholds, bar glyphs, labels, and which rows show
-are all configurable — see [`config.example.toml`](config.example.toml).
+The **context** row fills as your context window fills, showing the input/output
+token split. The **rate-limit** rows show headroom — how much you have *left*
+before the 5-hour and 7-day limits, with the reset countdown beside it. Bars turn
+red as a limit gets close (a short red bar means little left). Colors, thresholds,
+bar glyphs, labels, and which rows show are all configurable — see
+[`config.example.toml`](config.example.toml).
 
 ## Install
 

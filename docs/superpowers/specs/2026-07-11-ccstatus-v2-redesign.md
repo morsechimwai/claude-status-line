@@ -1,4 +1,4 @@
-# ccstatus v0.2.0 — UI redesign
+# ccstatus v0.2.0–0.3.0 — UI redesign
 
 **Date:** 2026-07-11
 **Status:** Approved
@@ -110,6 +110,32 @@ weekly  = "7d"
 - `bar(pct, &Style)` fills with `fill_color(pct)` glyphs then track glyphs.
 - `row(label, pct: Option<u8>, value, &Style)` emits one aligned gauge line.
 - `header(model) -> String` emits the bold model line (no style needed — always bold).
+
+## Addendum (v0.3.0) — hybrid "remaining" framing for rate limits
+
+UX research (API rate-limit convention is `X-RateLimit-Remaining`; GitHub/OpenAI
+expose remaining; progress-bar HCI notes remaining-framing can raise anxiety,
+mitigated here by threshold color + countdown) led to a **hybrid** framing:
+
+- **Context row: unchanged** — used/fullness (`34%`, bar fills, `↑in ↓out / size`).
+  A container filling toward compaction reads naturally as "how full".
+- **5h / 7d rows: remaining** — the bar length and label show what's *left*
+  (`58% left`), and the value is the bare countdown (`2h 15m`, no "resets in"
+  prefix). The **color still reflects danger by the underlying used percentage**,
+  so a nearly-exhausted window is a short *red* bar (little left = dangerous),
+  while a fresh window is a long *green* bar.
+
+```
+Opus 4.8 (1M context)
+Context  ████░░░░░░░░   34%       ↑280k ↓60k / 1.0m
+5h       ███████░░░░░   58% left  2h 15m
+7d       █░░░░░░░░░░░   12% left  4d 5h    ← red: little left
+```
+
+Render support: `bar_colored(bar_pct, color, &Style)` separates bar length from
+fill color; `bar(pct, &Style)` is the used-mode convenience wrapper; and
+`row_remaining(label, used, value, &Style)` renders the headroom rows (`used` is
+the used percentage; it shows `100 - used`% left and colors by `used`).
 
 ## Out of scope / unchanged
 
