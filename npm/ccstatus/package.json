@@ -1,6 +1,6 @@
 {
   "name": "ccstatus",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Fast Claude Code status line with cached usage bars",
   "bin": {
     "ccstatus": "bin/ccstatus.js"
@@ -10,11 +10,11 @@
     "README.md"
   ],
   "optionalDependencies": {
-    "@morsechimwai/ccstatus-darwin-arm64": "0.2.0",
-    "@morsechimwai/ccstatus-darwin-x64": "0.2.0",
-    "@morsechimwai/ccstatus-linux-arm64": "0.2.0",
-    "@morsechimwai/ccstatus-linux-x64": "0.2.0",
-    "@morsechimwai/ccstatus-win32-x64": "0.2.0"
+    "@morsechimwai/ccstatus-darwin-arm64": "0.3.0",
+    "@morsechimwai/ccstatus-darwin-x64": "0.3.0",
+    "@morsechimwai/ccstatus-linux-arm64": "0.3.0",
+    "@morsechimwai/ccstatus-linux-x64": "0.3.0",
+    "@morsechimwai/ccstatus-win32-x64": "0.3.0"
   },
   "keywords": [
     "claude",

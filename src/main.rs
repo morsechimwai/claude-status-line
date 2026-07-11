@@ -43,16 +43,16 @@ fn window_to_cache(live: Option<&input::Window>) -> Option<cache::CachedWindow> 
     })
 }
 
-/// A rate-limit gauge row: percentage bar plus a "resets in <countdown>" value,
-/// or "--" when there is no future reset time to show.
+/// A rate-limit gauge row rendered as remaining headroom (`N% left`) plus the
+/// countdown to reset. The bar shows what's left; the color still tracks danger.
+/// `r.pct` is the USED percentage. Value is the countdown, or `--` when there is
+/// no future reset to show.
 fn resolved_row(label: &str, r: &Resolved, style: &render::Style, now_ts: i64) -> String {
     let value = match r.resets_at {
-        Some(reset) if reset > now_ts => {
-            format!("resets in {}", render::fmt_countdown(reset - now_ts))
-        }
+        Some(reset) if reset > now_ts => render::fmt_countdown(reset - now_ts),
         _ => "--".to_string(),
     };
-    render::row(label, r.pct, &value, style)
+    render::row_remaining(label, r.pct, &value, style)
 }
 
 fn main() {

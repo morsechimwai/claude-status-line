@@ -46,23 +46,23 @@ fn renders_header_and_three_rows() {
     assert!(out.contains("Context"));
     assert!(out.contains("5h"));
     assert!(out.contains("7d"));
-    assert!(out.contains("42%"));
-    assert!(out.contains("18%"));
+    // Rate-limit rows show remaining headroom: 42% used -> 58% left, 18% -> 82%.
+    assert!(out.contains("58% left"), "5h headroom in: {out}");
+    assert!(out.contains("82% left"), "7d headroom in: {out}");
     assert!(out.contains("↑280k ↓60k / 1.0m"), "context token detail in: {out}");
-    assert!(out.contains("resets in"), "rate-limit rows show a countdown in: {out}");
 }
 
 #[test]
 fn cold_start_uses_cache() {
     let cache = tmp("cold_cache");
     let config = tmp("cold_config");
-    // First run seeds the cache from live data.
+    // First run seeds the cache from live data (42% / 18% used).
     run(FULL, &cache, &config);
     // Second run has no rate_limits — must fall back to cache.
     let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
     let out = run(no_limits, &cache, &config);
-    assert!(out.contains("42%"), "expected cached 42% in: {out}");
-    assert!(out.contains("18%"), "expected cached 18% in: {out}");
+    assert!(out.contains("58% left"), "expected cached 5h headroom in: {out}");
+    assert!(out.contains("82% left"), "expected cached 7d headroom in: {out}");
 }
 
 #[test]
@@ -97,8 +97,9 @@ fn persist_preserves_absent_window() {
     // Run 3: neither live — weekly must still show the preserved 18%.
     let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
     let out = run(no_limits, &cache, &config);
-    assert!(out.contains("18%"), "weekly cached value must survive a single-window persist: {out}");
-    assert!(out.contains("50%"), "current should reflect the updated cached value: {out}");
+    // 18% used -> 82% left (preserved), 50% used -> 50% left (updated).
+    assert!(out.contains("82% left"), "weekly cached value must survive a single-window persist: {out}");
+    assert!(out.contains("50% left"), "current should reflect the updated cached value: {out}");
 }
 
 #[test]
@@ -111,9 +112,10 @@ fn rolled_over_cached_window_shows_zero() {
     // Run 2: no live data — cached windows have past resets_at, so pct → 0.
     let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
     let out = run(no_limits, &cache, &config);
+    // Rolled over -> 0% used -> 100% left (full headroom); stale 58% gone.
     let five = out.lines().nth(2).expect("5h row");
-    assert!(five.contains("0%"), "rolled-over 5h window should render 0%: {five}");
-    assert!(!out.contains("42%"), "stale 42% must not show after rollover: {out}");
+    assert!(five.contains("100% left"), "rolled-over 5h window should show full headroom: {five}");
+    assert!(!out.contains("58% left"), "stale headroom must not show after rollover: {out}");
 }
 
 #[test]
@@ -126,5 +128,5 @@ fn null_live_percentage_renders_dashes_not_zero() {
     // lines: 0 header, 1 Context, 2 = 5h row.
     let five = out.lines().nth(2).expect("5h row");
     assert!(five.contains("--"), "null-pct window should render -- in 5h row: {five}");
-    assert!(!five.contains('%'), "null-pct window must not show a percentage: {five}");
+    assert!(!five.contains("% left"), "null-pct window must not show headroom: {five}");
 }
