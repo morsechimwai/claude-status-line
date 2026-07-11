@@ -80,3 +80,33 @@ fn malformed_stdin_exits_zero() {
     // Row 1 still renders with the default model name.
     assert!(out.contains("Claude"));
 }
+
+#[test]
+fn persist_preserves_absent_window() {
+    let cache = tmp("preserve_cache");
+    let config = tmp("preserve_config");
+    // Run 1: both windows live (42 / 18) seed the cache.
+    run(FULL, &cache, &config);
+    // Run 2: only five_hour live (50). seven_day must NOT be wiped.
+    let only_five = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000},"rate_limits":{"five_hour":{"used_percentage":50,"resets_at":4102444800}}}"#;
+    run(only_five, &cache, &config);
+    // Run 3: neither live — weekly must still show the preserved 18%.
+    let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
+    let out = run(no_limits, &cache, &config);
+    assert!(out.contains("18%"), "weekly cached value must survive a single-window persist: {out}");
+    assert!(out.contains("50%"), "current should reflect the updated cached value: {out}");
+}
+
+#[test]
+fn rolled_over_cached_window_shows_zero() {
+    let cache = tmp("rollover_cache");
+    let config = tmp("rollover_config");
+    // Run 1: live data whose reset is already in the past (2001).
+    let past = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000},"rate_limits":{"five_hour":{"used_percentage":42,"resets_at":1000000000},"seven_day":{"used_percentage":18,"resets_at":1000000000}}}"#;
+    run(past, &cache, &config);
+    // Run 2: no live data — cached windows have past resets_at, so pct → 0.
+    let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
+    let out = run(no_limits, &cache, &config);
+    assert!(out.contains(" 0%"), "rolled-over cached window should render 0%: {out}");
+    assert!(!out.contains("42%"), "stale 42% must not show after rollover: {out}");
+}

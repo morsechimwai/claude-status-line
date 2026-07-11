@@ -87,9 +87,13 @@ fn main() {
     let live_present =
         inp.rate_limits.five_hour.is_some() || inp.rate_limits.seven_day.is_some();
     if live_present {
+        // Merge live into the loaded cache: carry forward a window that has no
+        // live data this run instead of nulling it.
         cache::store(&cache::CachedUsage {
-            five_hour: window_to_cache(inp.rate_limits.five_hour.as_ref()),
-            seven_day: window_to_cache(inp.rate_limits.seven_day.as_ref()),
+            five_hour: window_to_cache(inp.rate_limits.five_hour.as_ref())
+                .or_else(|| cached.as_ref().and_then(|c| c.five_hour.clone())),
+            seven_day: window_to_cache(inp.rate_limits.seven_day.as_ref())
+                .or_else(|| cached.as_ref().and_then(|c| c.seven_day.clone())),
         });
     }
 
