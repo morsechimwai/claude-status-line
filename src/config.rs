@@ -181,6 +181,10 @@ mod tests {
         let s = c.style();
         assert_eq!(s.fill, 99); // overridden
         assert_eq!(s.track, 17); // still the blue preset's track
+        // an unknown preset falls back to orange.
+        let unknown = Config::from_toml("[colors]\npreset = \"chartreuse\"\n").style();
+        assert_eq!(unknown.fill, 173);
+        assert_eq!(unknown.track, 240);
     }
 
     #[test]

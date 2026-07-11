@@ -209,4 +209,4 @@ so it renders without a braille font) embedded in the README, regenerable via
 
 Input parsing, the last-known-usage cache and its merge/persist logic, XDG paths, error-handling
 (exit 0, no panics), and all distribution channels (brew/npm/cargo/release CI). Only the
-presentation layer and config surface change. Version bumps to **0.2.0**.
+presentation layer and config surface change. Versions have since evolved through 0.6.0.
