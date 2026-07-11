@@ -147,7 +147,7 @@ mod tests {
         Style {
             track: 240,
             dim: 245,
-            fill: 173,
+            fill: 68,
             width: 12,
             filled: "#".into(),
             empty: ".".into(),
@@ -170,7 +170,7 @@ mod tests {
     fn bar_uses_brand_fill() {
         let s = test_style();
         let b = bar(50, &s);
-        assert!(b.starts_with("\x1b[38;5;173m")); // brand orange fill
+        assert!(b.starts_with("\x1b[38;5;68m")); // brand blue fill
         assert_eq!(b.matches('#').count(), 6);
         assert_eq!(b.matches('.').count(), 6);
         assert!(b.ends_with("\x1b[0m"));
@@ -187,7 +187,7 @@ mod tests {
         let mid = bar(50, &s);
         assert_eq!(mid.matches('⣿').count(), 6);
         assert_eq!(mid.matches('⣀').count(), 6);
-        assert!(mid.starts_with("\x1b[38;5;173m"));
+        assert!(mid.starts_with("\x1b[38;5;68m"));
         assert!(mid.ends_with("\x1b[0m"));
     }
 
