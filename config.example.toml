@@ -2,9 +2,13 @@
 # Every key is optional; omitted keys use the defaults shown here.
 
 [colors]
-fill  = 68    # 256-color index for filled bar cells (Claude usage-panel blue)
-track = 17    # empty track (dark navy)
-dim   = 245   # percentage / value / plan text
+# Pick a preset: "orange" (default, Claude brand), "blue" (usage-panel),
+# "green", "purple", or "mono".
+preset = "orange"
+# Or override individual 256-color indices (uncomment to override the preset):
+# fill  = 208   # filled bar cells (e.g. a brighter orange)
+# track = 238   # empty track
+# dim   = 245   # percentage / value / plan text
 
 [bar]
 width   = 12

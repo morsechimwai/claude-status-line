@@ -187,8 +187,26 @@ Best-effort: any read/parse failure yields no label. `plan::detect() ->
 Option<String>` and `plan::pretty_tier(raw) -> Option<String>` live in
 `src/plan.rs`.
 
+## Addendum (v0.6.0) — color presets, orange default
+
+The default color reverts to the **Claude-brand orange**, and colors become
+choosable by name rather than only by raw 256-color index.
+
+- `[colors] preset` — one of `orange` (default), `blue` (the usage-panel look),
+  `green`, `purple`, `mono`. Each maps to a `(fill, track, dim)` triple.
+- `[colors] fill` / `track` / `dim` are now `Option<u8>` overrides: set one to
+  override just that channel of the preset; leave it out to use the preset.
+- Resolution lives in `Config::style()`: `self.colors.fill.unwrap_or(preset_fill)`,
+  etc. Unknown preset names fall back to orange.
+
+Defaults: preset `orange` → fill `173`, track `240`, dim `245`.
+
+Also adds `assets/preview.svg` (a vector terminal render — braille drawn as dots
+so it renders without a braille font) embedded in the README, regenerable via
+`scripts/gen-preview-svg.py`.
+
 ## Out of scope / unchanged
 
 Input parsing, the last-known-usage cache and its merge/persist logic, XDG paths, error-handling
 (exit 0, no panics), and all distribution channels (brew/npm/cargo/release CI). Only the
-presentation layer and config surface change. Version bumps to **0.2.0**.
+presentation layer and config surface change. Versions have since evolved through 0.6.0.
