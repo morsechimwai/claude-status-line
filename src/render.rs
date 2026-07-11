@@ -99,7 +99,9 @@ pub fn row(label: &str, pct: Option<u8>, value: &str, s: &Style) -> String {
 pub fn row_remaining(label: &str, used: Option<u8>, value: &str, s: &Style) -> String {
     let dim = format!("\x1b[38;5;{}m", s.dim);
     let (pdisp, barstr) = match used {
-        None => ("--".to_string(), bar_colored(0, s.track, s)),
+        // Pad to the same 9-char width as "NNN% left" so the value column stays
+        // aligned when a sibling row has data and this one does not.
+        None => (format!("{:>9}", "--"), bar_colored(0, s.track, s)),
         Some(u) => {
             let u = u.min(100);
             let remaining = 100 - u;
@@ -234,5 +236,31 @@ mod tests {
         let r = row_remaining("5h", None, "--", &s);
         assert!(r.contains("--"));
         assert!(!r.contains("% left"));
+    }
+
+    #[test]
+    fn row_remaining_columns_align() {
+        let s = test_style();
+        // Visible width up to an (empty) value must match with and without data,
+        // so the value column lines up across sibling rows.
+        let visible = |x: String| -> usize {
+            let mut n = 0;
+            let mut it = x.chars().peekable();
+            while let Some(c) = it.next() {
+                if c == '\x1b' {
+                    while let Some(d) = it.next() {
+                        if d == 'm' {
+                            break;
+                        }
+                    }
+                } else {
+                    n += 1;
+                }
+            }
+            n
+        };
+        let with = visible(row_remaining("5h", Some(42), "", &s));
+        let without = visible(row_remaining("5h", None, "", &s));
+        assert_eq!(with, without, "value column must align with and without data");
     }
 }

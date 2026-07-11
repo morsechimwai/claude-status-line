@@ -1,4 +1,4 @@
-# ccstatus v0.2.0 — UI redesign
+# ccstatus v0.2.0–0.3.0 — UI redesign
 
 **Date:** 2026-07-11
 **Status:** Approved
