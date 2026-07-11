@@ -109,7 +109,7 @@ weekly  = "7d"
 - `fill_color(pct, &Style) -> u8` returns good/warn/crit by band.
 - `bar(pct, &Style)` fills with `fill_color(pct)` glyphs then track glyphs.
 - `row(label, pct: Option<u8>, value, &Style)` emits one aligned gauge line.
-- `header(model, &Style) -> String` emits the bold model line.
+- `header(model) -> String` emits the bold model line (no style needed — always bold).
 
 ## Out of scope / unchanged
 
