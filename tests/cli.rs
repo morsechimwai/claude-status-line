@@ -110,3 +110,15 @@ fn rolled_over_cached_window_shows_zero() {
     assert!(out.contains(" 0%"), "rolled-over cached window should render 0%: {out}");
     assert!(!out.contains("42%"), "stale 42% must not show after rollover: {out}");
 }
+
+#[test]
+fn null_live_percentage_renders_dashes_not_zero() {
+    let cache = tmp("nullpct_cache");
+    let config = tmp("nullpct_config");
+    // five_hour present but percentage is null; no cache seeded → Current must show --, not 0%.
+    let json = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"used_percentage":5,"context_window_size":1000000},"rate_limits":{"five_hour":{"used_percentage":null,"resets_at":4102444800}}}"#;
+    let out = run(json, &cache, &config);
+    let current = out.lines().nth(1).expect("current row");
+    assert!(current.contains("--"), "null-pct window should render -- in Current row: {current}");
+    assert!(!current.contains('%'), "null-pct window must not show a percentage: {current}");
+}

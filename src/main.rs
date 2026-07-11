@@ -1,6 +1,7 @@
 use ccstatus::{cache, config, input, render};
 use chrono::{DateTime, Local, TimeZone};
 use std::io::Read;
+use std::io::Write;
 
 /// A rate-limit row resolved from either live data or the cache.
 struct Resolved {
@@ -19,10 +20,9 @@ fn resolve_window(
     now: i64,
 ) -> Resolved {
     if let Some(w) = live {
-        return Resolved {
-            pct: Some(clamp_pct(w.used_percentage.unwrap_or(0.0))),
-            resets_at: w.resets_at,
-        };
+        if let Some(p) = w.used_percentage {
+            return Resolved { pct: Some(clamp_pct(p)), resets_at: w.resets_at };
+        }
     }
     match cached {
         Some(c) => {
@@ -35,9 +35,11 @@ fn resolve_window(
 }
 
 fn window_to_cache(live: Option<&input::Window>) -> Option<cache::CachedWindow> {
-    live.map(|w| cache::CachedWindow {
-        used_percentage: w.used_percentage.unwrap_or(0.0),
-        resets_at: w.resets_at,
+    live.and_then(|w| {
+        w.used_percentage.map(|p| cache::CachedWindow {
+            used_percentage: p,
+            resets_at: w.resets_at,
+        })
     })
 }
 
@@ -84,16 +86,14 @@ fn main() {
         now.timestamp(),
     );
 
-    let live_present =
-        inp.rate_limits.five_hour.is_some() || inp.rate_limits.seven_day.is_some();
-    if live_present {
-        // Merge live into the loaded cache: carry forward a window that has no
-        // live data this run instead of nulling it.
+    // Merge live into the loaded cache: carry forward a window that has no
+    // live data (or no real percentage) this run instead of nulling it.
+    let five_live = window_to_cache(inp.rate_limits.five_hour.as_ref());
+    let seven_live = window_to_cache(inp.rate_limits.seven_day.as_ref());
+    if five_live.is_some() || seven_live.is_some() {
         cache::store(&cache::CachedUsage {
-            five_hour: window_to_cache(inp.rate_limits.five_hour.as_ref())
-                .or_else(|| cached.as_ref().and_then(|c| c.five_hour.clone())),
-            seven_day: window_to_cache(inp.rate_limits.seven_day.as_ref())
-                .or_else(|| cached.as_ref().and_then(|c| c.seven_day.clone())),
+            five_hour: five_live.or_else(|| cached.as_ref().and_then(|c| c.five_hour.clone())),
+            seven_day: seven_live.or_else(|| cached.as_ref().and_then(|c| c.seven_day.clone())),
         });
     }
 
@@ -105,6 +105,6 @@ fn main() {
     }
 
     if !lines.is_empty() {
-        println!("{}", lines.join("\n"));
+        let _ = writeln!(std::io::stdout(), "{}", lines.join("\n"));
     }
 }
