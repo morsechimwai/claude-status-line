@@ -1,25 +1,28 @@
 # ccstatus
 
 Fast Claude Code status line with usage bars. Renders the model, your context
-window, and both rate-limit windows (5-hour and 7-day) — with bars that turn
-**green → amber → red** as you approach a limit, and **cached last-known usage
+window, and both rate-limit windows (5-hour and 7-day) as hi-res braille gauges —
+styled to match Claude Code's own usage panel — with **cached last-known usage
 shown instantly on session start** instead of blanks.
 
 Single Rust binary, no runtime dependencies.
 
 ```
-Opus 4.8 (1M context)
-Context  ████░░░░░░░░   34%       ↑280k ↓60k / 1.0m
-5h       ███████░░░░░   58% left  2h 15m
-7d       █░░░░░░░░░░░   12% left  4d 5h
+Opus 4.8 (1M context)  Max (20x)
+Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  ↑180k ↓45k / 1.0m
+5h       ⣿⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀   28%  resets in 2h 23m
+7d       ⣿⣿⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀   33%  resets in 2d 7h
 ```
 
-The **context** row fills as your context window fills, showing the input/output
-token split. The **rate-limit** rows show headroom — how much you have *left*
-before the 5-hour and 7-day limits, with the reset countdown beside it. Bars turn
-red as a limit gets close (a short red bar means little left). Colors, thresholds,
-bar glyphs, labels, and which rows show are all configurable — see
-[`config.example.toml`](config.example.toml).
+Each row shows usage percent and a hi-res braille bar in the Claude blue; the
+context row adds the input/output token split, and the rate-limit rows count down
+to their reset. An optional plan label (e.g. `Max (20x)`) sits next to the model.
+Colors, the braille/block bar, labels, the plan label, and which rows show are all
+configurable — see [`config.example.toml`](config.example.toml).
+
+> The plan tier and per-model ("Fable") limits aren't in the status-line JSON that
+> Claude Code provides, so the plan is an optional label you set in config, and
+> only the aggregate 5-hour and 7-day windows are shown.
 
 ## Install
 
