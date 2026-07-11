@@ -15,9 +15,23 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Colors {
-    pub track: u8,
-    pub dim: u8,
-    pub fill: u8,
+    /// Named color preset: "orange" (default), "blue", "green", "purple", "mono".
+    pub preset: String,
+    /// Overrides for the preset (256-color index). `None` -> use the preset.
+    pub fill: Option<u8>,
+    pub track: Option<u8>,
+    pub dim: Option<u8>,
+}
+
+/// (fill, track, dim) for a named preset. Unknown names fall back to orange.
+fn preset_colors(name: &str) -> (u8, u8, u8) {
+    match name.trim().to_lowercase().as_str() {
+        "blue" => (68, 17, 245),    // Claude usage-panel blue on navy
+        "green" => (71, 22, 245),
+        "purple" => (140, 53, 245),
+        "mono" => (245, 238, 245),
+        _ => (173, 240, 245), // orange (Claude brand) — default + fallback
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -59,9 +73,7 @@ pub struct Layout {
 
 impl Default for Colors {
     fn default() -> Self {
-        // Match the official Claude Code usage panel: medium blue fill on a
-        // dark navy track.
-        Self { track: 17, dim: 245, fill: 68 }
+        Self { preset: "orange".into(), fill: None, track: None, dim: None }
     }
 }
 
@@ -107,10 +119,11 @@ impl Config {
     }
 
     pub fn style(&self) -> Style {
+        let (p_fill, p_track, p_dim) = preset_colors(&self.colors.preset);
         Style {
-            track: self.colors.track,
-            dim: self.colors.dim,
-            fill: self.colors.fill,
+            fill: self.colors.fill.unwrap_or(p_fill),
+            track: self.colors.track.unwrap_or(p_track),
+            dim: self.colors.dim.unwrap_or(p_dim),
             width: self.bar.width,
             filled: self.bar.filled.clone(),
             empty: self.bar.empty.clone(),
@@ -140,9 +153,11 @@ mod tests {
     #[test]
     fn defaults_match_redesign() {
         let c = Config::default();
-        assert_eq!(c.colors.dim, 245);
-        assert_eq!(c.colors.fill, 68); // Claude usage-panel blue
-        assert_eq!(c.colors.track, 17); // dark navy track
+        assert_eq!(c.colors.preset, "orange");
+        let s = c.style();
+        assert_eq!(s.fill, 173); // Claude-brand orange by default
+        assert_eq!(s.track, 240);
+        assert_eq!(s.dim, 245);
         assert_eq!(c.bar.width, 12);
         assert_eq!(c.bar.filled, "█");
         assert_eq!(c.bar.empty, "░");
@@ -156,12 +171,22 @@ mod tests {
     }
 
     #[test]
+    fn preset_and_override() {
+        // preset picks a whole scheme...
+        let blue = Config::from_toml("[colors]\npreset = \"blue\"\n").style();
+        assert_eq!(blue.fill, 68);
+        assert_eq!(blue.track, 17);
+        // ...and a raw override wins over the preset for that channel only.
+        let c = Config::from_toml("[colors]\npreset = \"blue\"\nfill = 99\n");
+        let s = c.style();
+        assert_eq!(s.fill, 99); // overridden
+        assert_eq!(s.track, 17); // still the blue preset's track
+    }
+
+    #[test]
     fn parses_partial_override() {
-        let c = Config::from_toml(
-            "[colors]\nfill = 99\n[bar]\nbraille = false\n[layout]\nmodel_header = false\n",
-        );
-        assert_eq!(c.colors.fill, 99);
-        assert_eq!(c.colors.track, 17); // untouched default
+        let c = Config::from_toml("[bar]\nbraille = false\n[layout]\nmodel_header = false\n");
+        assert_eq!(c.style().fill, 173); // untouched -> orange default
         assert!(!c.bar.braille);
         assert_eq!(c.bar.width, 12); // untouched default
         assert!(!c.layout.model_header);
@@ -170,14 +195,13 @@ mod tests {
     #[test]
     fn malformed_toml_yields_default() {
         let c = Config::from_toml("this is not toml =========");
-        assert_eq!(c.colors.fill, 68);
+        assert_eq!(c.style().fill, 173);
     }
 
     #[test]
     fn style_maps_fields() {
-        let c = Config::default();
-        let s = c.style();
-        assert_eq!(s.fill, 68);
+        let s = Config::default().style();
+        assert_eq!(s.fill, 173);
         assert_eq!(s.width, 12);
         assert_eq!(s.empty, "░");
         assert!(s.braille);

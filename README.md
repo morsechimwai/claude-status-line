@@ -1,23 +1,18 @@
 # ccstatus
 
 Fast Claude Code status line with usage bars. Renders the model, your context
-window, and both rate-limit windows (5-hour and 7-day) as hi-res braille gauges —
-styled to match Claude Code's own usage panel — with **cached last-known usage
-shown instantly on session start** instead of blanks.
+window, and both rate-limit windows (5-hour and 7-day) as hi-res braille gauges,
+with **cached last-known usage shown instantly on session start** instead of blanks.
 
 Single Rust binary, no runtime dependencies.
 
-```
-Opus 4.8 (1M context)  Max (20x)
-Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  ↑180k ↓45k / 1.0m
-5h       ⣿⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀   28%  resets in 2h 23m
-7d       ⣿⣿⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀   33%  resets in 2d 7h
-```
+<p align="center"><img src="assets/preview.svg" alt="ccstatus terminal preview" width="660"></p>
 
-Each row shows usage percent and a hi-res braille bar in the Claude blue; the
-context row adds the input/output token split, and the rate-limit rows count down
-to their reset. The plan label (e.g. `Max (20x)`) sits next to the model —
-auto-detected from your Claude Code account. Colors, the braille/block bar,
+Each row shows usage percent and a hi-res braille bar in the Claude-brand color
+(orange by default; pick a `blue`/`green`/`purple`/`mono` preset or any 256-color
+in config). The context row adds the input/output token split, and the rate-limit
+rows count down to their reset. The plan label (e.g. `Max (20x)`) sits next to the
+model — auto-detected from your Claude Code account. Colors, the braille/block bar,
 labels, the plan label, and which rows show are all configurable — see
 [`config.example.toml`](config.example.toml).
 
