@@ -16,13 +16,16 @@ Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  ↑180k ↓45k / 1.0m
 
 Each row shows usage percent and a hi-res braille bar in the Claude blue; the
 context row adds the input/output token split, and the rate-limit rows count down
-to their reset. An optional plan label (e.g. `Max (20x)`) sits next to the model.
-Colors, the braille/block bar, labels, the plan label, and which rows show are all
-configurable — see [`config.example.toml`](config.example.toml).
+to their reset. The plan label (e.g. `Max (20x)`) sits next to the model —
+auto-detected from your Claude Code account. Colors, the braille/block bar,
+labels, the plan label, and which rows show are all configurable — see
+[`config.example.toml`](config.example.toml).
 
-> The plan tier and per-model ("Fable") limits aren't in the status-line JSON that
-> Claude Code provides, so the plan is an optional label you set in config, and
-> only the aggregate 5-hour and 7-day windows are shown.
+> **Plan auto-detection:** the status-line JSON doesn't carry your plan, so
+> ccstatus reads *only* the rate-limit tier field from `~/.claude.json` and maps
+> it to a short label. Override it with `[layout] plan = "…"`, or turn it off
+> with `plan_auto = false`. Per-model ("Fable") limits aren't exposed anywhere in
+> the status-line data, so only the aggregate 5-hour and 7-day windows are shown.
 
 ## Install
 

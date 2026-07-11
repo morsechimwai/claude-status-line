@@ -171,6 +171,22 @@ Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  ↑180k ↓45k / 1.0m
 `fill_color`/`row_remaining` are gone; `header(model, plan, &Style)` appends the
 plan label.
 
+## Addendum (v0.5.0) — plan auto-detection
+
+The plan label no longer has to be typed. Claude Code records the account's
+rate-limit tier in `~/.claude.json` (e.g. `oauthAccount.organizationRateLimitTier
+= "default_claude_max_20x"`). A new `plan` module reads **only that one string
+field** (via a lightweight scan, not a full parse of the large file) and maps it
+to a short label: `default_claude_max_20x → Max (20x)`, `claude_pro → Pro`, etc.
+
+- `[layout] plan` set → used verbatim (override).
+- `[layout] plan` empty and `plan_auto = true` (default) → auto-detected.
+- `plan_auto = false` → never reads `~/.claude.json`.
+
+Best-effort: any read/parse failure yields no label. `plan::detect() ->
+Option<String>` and `plan::pretty_tier(raw) -> Option<String>` live in
+`src/plan.rs`.
+
 ## Out of scope / unchanged
 
 Input parsing, the last-known-usage cache and its merge/persist logic, XDG paths, error-handling

@@ -68,7 +68,14 @@ fn main() {
     let mut lines: Vec<String> = Vec::new();
 
     if cfg.layout.model_header {
-        lines.push(render::header(&inp.model.display_name, &cfg.layout.plan, &style));
+        let plan = if !cfg.layout.plan.is_empty() {
+            cfg.layout.plan.clone()
+        } else if cfg.layout.plan_auto {
+            ccstatus::plan::detect().unwrap_or_default()
+        } else {
+            String::new()
+        };
+        lines.push(render::header(&inp.model.display_name, &plan, &style));
     }
 
     if cfg.rows.context {

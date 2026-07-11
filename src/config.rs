@@ -49,9 +49,12 @@ pub struct Labels {
 #[serde(default)]
 pub struct Layout {
     pub model_header: bool,
-    /// Optional plan/tier label shown next to the model name (e.g. "Max (20x)").
-    /// The status-line JSON does not expose the plan, so you set it here.
+    /// Plan/tier label shown next to the model name. If set, it is used
+    /// verbatim (e.g. "Max (20x)"). If empty and `plan_auto` is true, it is
+    /// auto-detected from `~/.claude.json`.
     pub plan: String,
+    /// Auto-detect the plan from `~/.claude.json` when `plan` is empty.
+    pub plan_auto: bool,
 }
 
 impl Default for Colors {
@@ -82,7 +85,7 @@ impl Default for Labels {
 
 impl Default for Layout {
     fn default() -> Self {
-        Self { model_header: true, plan: String::new() }
+        Self { model_header: true, plan: String::new(), plan_auto: true }
     }
 }
 
@@ -149,6 +152,7 @@ mod tests {
         assert_eq!(c.labels.current, "5h");
         assert_eq!(c.labels.weekly, "7d");
         assert!(c.layout.model_header);
+        assert!(c.layout.plan_auto);
     }
 
     #[test]
