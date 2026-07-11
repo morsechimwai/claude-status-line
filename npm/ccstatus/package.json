@@ -10,11 +10,11 @@
     "README.md"
   ],
   "optionalDependencies": {
-    "@ccstatus/darwin-arm64": "0.1.0",
-    "@ccstatus/darwin-x64": "0.1.0",
-    "@ccstatus/linux-arm64": "0.1.0",
-    "@ccstatus/linux-x64": "0.1.0",
-    "@ccstatus/win32-x64": "0.1.0"
+    "@morsechimwai/ccstatus-darwin-arm64": "0.1.0",
+    "@morsechimwai/ccstatus-darwin-x64": "0.1.0",
+    "@morsechimwai/ccstatus-linux-arm64": "0.1.0",
+    "@morsechimwai/ccstatus-linux-x64": "0.1.0",
+    "@morsechimwai/ccstatus-win32-x64": "0.1.0"
   },
   "keywords": [
     "claude",

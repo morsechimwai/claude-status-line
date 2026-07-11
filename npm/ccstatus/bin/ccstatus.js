@@ -7,7 +7,7 @@
 const { spawnSync } = require("child_process");
 
 const key = `${process.platform}-${process.arch}`;
-const pkg = `@ccstatus/${key}`;
+const pkg = `@morsechimwai/ccstatus-${key}`;
 const binName = process.platform === "win32" ? "ccstatus.exe" : "ccstatus";
 
 let binPath;

@@ -1,10 +1,19 @@
 {
-  "name": "@ccstatus/linux-x64",
+  "name": "@morsechimwai/ccstatus-linux-x64",
   "version": "0.1.0",
   "description": "ccstatus prebuilt binary for linux-x64",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/morsechimwai/claude-status-line.git" },
-  "os": ["linux"],
-  "cpu": ["x64"],
-  "files": ["ccstatus"]
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morsechimwai/claude-status-line.git"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "ccstatus"
+  ]
 }
