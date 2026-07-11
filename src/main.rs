@@ -1,5 +1,7 @@
 use std::io::Read;
 
+mod render;
+
 fn main() {
     let mut buf = String::new();
     let _ = std::io::stdin().read_to_string(&mut buf);
