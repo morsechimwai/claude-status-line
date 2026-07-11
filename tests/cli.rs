@@ -29,7 +29,7 @@ fn tmp(name: &str) -> String {
 
 const FULL: &str = r#"{
     "model": {"display_name": "Opus 4.8"},
-    "context_window": {"used_percentage": 0, "context_window_size": 1000000, "total_input_tokens": 0, "total_output_tokens": 0},
+    "context_window": {"used_percentage": 0, "context_window_size": 1000000, "total_input_tokens": 280000, "total_output_tokens": 60000},
     "rate_limits": {
         "five_hour": {"used_percentage": 42, "resets_at": 4102444800},
         "seven_day": {"used_percentage": 18, "resets_at": 4102444800}
@@ -37,17 +37,19 @@ const FULL: &str = r#"{
 }"#;
 
 #[test]
-fn renders_three_rows_from_live_data() {
+fn renders_header_and_three_rows() {
     let cache = tmp("live_cache");
     let config = tmp("live_config");
     let out = run(FULL, &cache, &config);
-    assert!(out.contains("Opus 4.8"));
-    assert!(out.contains("Current"));
-    assert!(out.contains("Weekly"));
+    assert_eq!(out.lines().count(), 4); // model header + 3 gauge rows
+    assert!(out.contains("Opus 4.8")); // header line
+    assert!(out.contains("Context"));
+    assert!(out.contains("5h"));
+    assert!(out.contains("7d"));
     assert!(out.contains("42%"));
     assert!(out.contains("18%"));
-    assert!(out.contains("0/1.0m"));
-    assert_eq!(out.lines().count(), 3);
+    assert!(out.contains("↑280k ↓60k / 1.0m"), "context token detail in: {out}");
+    assert!(out.contains("resets in"), "rate-limit rows show a countdown in: {out}");
 }
 
 #[test]
@@ -69,7 +71,9 @@ fn cold_start_no_cache_shows_dashes() {
     let config = tmp("empty_config");
     let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
     let out = run(no_limits, &cache, &config);
-    assert!(out.contains(" --"), "expected dashes in: {out}");
+    // 5h row (line index 2) has no data at all → "--".
+    let five = out.lines().nth(2).expect("5h row");
+    assert!(five.contains("--"), "expected dashes in 5h row: {five}");
 }
 
 #[test]
@@ -77,7 +81,7 @@ fn malformed_stdin_exits_zero() {
     let cache = tmp("bad_cache");
     let config = tmp("bad_config");
     let out = run("total garbage", &cache, &config);
-    // Row 1 still renders with the default model name.
+    // Header still renders with the default model name.
     assert!(out.contains("Claude"));
 }
 
@@ -107,7 +111,8 @@ fn rolled_over_cached_window_shows_zero() {
     // Run 2: no live data — cached windows have past resets_at, so pct → 0.
     let no_limits = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"context_window_size":1000000}}"#;
     let out = run(no_limits, &cache, &config);
-    assert!(out.contains(" 0%"), "rolled-over cached window should render 0%: {out}");
+    let five = out.lines().nth(2).expect("5h row");
+    assert!(five.contains("0%"), "rolled-over 5h window should render 0%: {five}");
     assert!(!out.contains("42%"), "stale 42% must not show after rollover: {out}");
 }
 
@@ -115,10 +120,11 @@ fn rolled_over_cached_window_shows_zero() {
 fn null_live_percentage_renders_dashes_not_zero() {
     let cache = tmp("nullpct_cache");
     let config = tmp("nullpct_config");
-    // five_hour present but percentage is null; no cache seeded → Current must show --, not 0%.
+    // five_hour present but percentage is null; no cache seeded → 5h row must show --, not 0%.
     let json = r#"{"model":{"display_name":"Opus 4.8"},"context_window":{"used_percentage":5,"context_window_size":1000000},"rate_limits":{"five_hour":{"used_percentage":null,"resets_at":4102444800}}}"#;
     let out = run(json, &cache, &config);
-    let current = out.lines().nth(1).expect("current row");
-    assert!(current.contains("--"), "null-pct window should render -- in Current row: {current}");
-    assert!(!current.contains('%'), "null-pct window must not show a percentage: {current}");
+    // lines: 0 header, 1 Context, 2 = 5h row.
+    let five = out.lines().nth(2).expect("5h row");
+    assert!(five.contains("--"), "null-pct window should render -- in 5h row: {five}");
+    assert!(!five.contains('%'), "null-pct window must not show a percentage: {five}");
 }

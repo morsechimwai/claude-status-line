@@ -6,17 +6,28 @@ use std::path::PathBuf;
 #[serde(default)]
 pub struct Config {
     pub colors: Colors,
+    pub thresholds: Thresholds,
     pub bar: Bar,
     pub rows: Rows,
     pub labels: Labels,
+    pub layout: Layout,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Colors {
-    pub fill: u8,
     pub track: u8,
     pub dim: u8,
+    pub good: u8,
+    pub warn: u8,
+    pub crit: u8,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct Thresholds {
+    pub warn_at: u8,
+    pub crit_at: u8,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,19 +49,32 @@ pub struct Rows {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Labels {
+    pub context: String,
     pub current: String,
     pub weekly: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct Layout {
+    pub model_header: bool,
+}
+
 impl Default for Colors {
     fn default() -> Self {
-        Self { fill: 173, track: 240, dim: 245 }
+        Self { track: 240, dim: 245, good: 71, warn: 179, crit: 167 }
+    }
+}
+
+impl Default for Thresholds {
+    fn default() -> Self {
+        Self { warn_at: 50, crit_at: 80 }
     }
 }
 
 impl Default for Bar {
     fn default() -> Self {
-        Self { width: 12, filled: "█".into(), empty: "█".into() }
+        Self { width: 12, filled: "█".into(), empty: "░".into() }
     }
 }
 
@@ -62,7 +86,13 @@ impl Default for Rows {
 
 impl Default for Labels {
     fn default() -> Self {
-        Self { current: "Current".into(), weekly: "Weekly".into() }
+        Self { context: "Context".into(), current: "5h".into(), weekly: "7d".into() }
+    }
+}
+
+impl Default for Layout {
+    fn default() -> Self {
+        Self { model_header: true }
     }
 }
 
@@ -70,9 +100,11 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             colors: Colors::default(),
+            thresholds: Thresholds::default(),
             bar: Bar::default(),
             rows: Rows::default(),
             labels: Labels::default(),
+            layout: Layout::default(),
         }
     }
 }
@@ -84,9 +116,13 @@ impl Config {
 
     pub fn style(&self) -> Style {
         Style {
-            fill: self.colors.fill,
             track: self.colors.track,
             dim: self.colors.dim,
+            good: self.colors.good,
+            warn: self.colors.warn,
+            crit: self.colors.crit,
+            warn_at: self.thresholds.warn_at,
+            crit_at: self.thresholds.crit_at,
             width: self.bar.width,
             filled: self.bar.filled.clone(),
             empty: self.bar.empty.clone(),
@@ -113,40 +149,52 @@ mod tests {
     use super::*;
 
     #[test]
-    fn defaults_match_original() {
+    fn defaults_match_redesign() {
         let c = Config::default();
-        assert_eq!(c.colors.fill, 173);
         assert_eq!(c.colors.track, 240);
         assert_eq!(c.colors.dim, 245);
+        assert_eq!(c.colors.good, 71);
+        assert_eq!(c.colors.warn, 179);
+        assert_eq!(c.colors.crit, 167);
+        assert_eq!(c.thresholds.warn_at, 50);
+        assert_eq!(c.thresholds.crit_at, 80);
         assert_eq!(c.bar.width, 12);
         assert_eq!(c.bar.filled, "█");
-        assert_eq!(c.bar.empty, "█");
+        assert_eq!(c.bar.empty, "░"); // light track is the new default
         assert!(c.rows.context && c.rows.current && c.rows.weekly);
-        assert_eq!(c.labels.current, "Current");
-        assert_eq!(c.labels.weekly, "Weekly");
+        assert_eq!(c.labels.context, "Context");
+        assert_eq!(c.labels.current, "5h");
+        assert_eq!(c.labels.weekly, "7d");
+        assert!(c.layout.model_header);
     }
 
     #[test]
     fn parses_partial_override() {
-        let c = Config::from_toml("[colors]\nfill = 99\n[bar]\nempty = \"░\"\n");
-        assert_eq!(c.colors.fill, 99);
+        let c = Config::from_toml(
+            "[colors]\ngood = 99\n[thresholds]\ncrit_at = 90\n[bar]\nempty = \"█\"\n[layout]\nmodel_header = false\n",
+        );
+        assert_eq!(c.colors.good, 99);
         assert_eq!(c.colors.track, 240); // untouched default
-        assert_eq!(c.bar.empty, "░");
-        assert_eq!(c.bar.width, 12); // untouched default
+        assert_eq!(c.thresholds.crit_at, 90);
+        assert_eq!(c.thresholds.warn_at, 50); // untouched default
+        assert_eq!(c.bar.empty, "█");
+        assert!(!c.layout.model_header);
     }
 
     #[test]
     fn malformed_toml_yields_default() {
         let c = Config::from_toml("this is not toml =========");
-        assert_eq!(c.colors.fill, 173);
+        assert_eq!(c.colors.good, 71);
     }
 
     #[test]
     fn style_maps_fields() {
         let c = Config::default();
         let s = c.style();
-        assert_eq!(s.fill, 173);
+        assert_eq!(s.good, 71);
+        assert_eq!(s.crit, 167);
+        assert_eq!(s.warn_at, 50);
         assert_eq!(s.width, 12);
-        assert_eq!(s.filled, "█");
+        assert_eq!(s.empty, "░");
     }
 }
