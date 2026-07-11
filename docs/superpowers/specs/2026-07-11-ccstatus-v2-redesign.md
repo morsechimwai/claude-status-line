@@ -137,6 +137,40 @@ fill color; `bar(pct, &Style)` is the used-mode convenience wrapper; and
 `row_remaining(label, used, value, &Style)` renders the headroom rows (`used` is
 the used percentage; it shows `100 - used`% left and colors by `used`).
 
+## Addendum (v0.4.0) — braille bars, official-panel styling, plan label
+
+This section **supersedes the v0.3.0 remaining/threshold addendum** above, per user
+direction after iterating on the live output.
+
+- **Bar: hi-res braille** (`[bar] braille = true`, default). Each cell is a braille
+  glyph (base U+2800) with two horizontal sub-columns → `2*width` steps. Dots 7,8
+  form an always-lit baseline (empty cells read as `⣀`); a lit left column adds
+  dots 1,2,3, a lit right column adds 4,5,6. Cells with any lit column use the fill
+  color, others the track color. `braille = false` falls back to the block bar
+  (`filled`/`empty` glyphs).
+- **Framing reverted to used** — every row shows the *used* percentage again
+  (`28%`), not remaining. `row_remaining` and the threshold coloring are removed.
+- **Single brand color, recolored to the official usage panel** — `[colors] fill`
+  is one color (no good/warn/crit bands). Defaults changed to match Claude Code's
+  usage panel: `fill = 68` (blue), `track = 17` (dark navy), `dim = 245`.
+- **Optional plan label** — `[layout] plan` (default empty). When set, it is
+  appended dim to the model header: `Opus 4.8 (1M context)  Max (20x)`. The
+  status-line JSON does **not** expose the plan tier, so it is user-set config.
+- **No Fable / per-model row** — the status-line JSON exposes only the aggregate
+  `five_hour` and `seven_day` windows (confirmed against the Claude Code
+  statusline docs); there is no per-model ("Fable") usage to render.
+
+```
+Opus 4.8 (1M context)  Max (20x)
+Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  ↑180k ↓45k / 1.0m
+5h       ⣿⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀   28%  resets in 2h 23m
+7d       ⣿⣿⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀   33%  resets in 2d 7h
+```
+
+`Style` becomes `{ track, dim, fill, width, filled, empty, braille }`;
+`fill_color`/`row_remaining` are gone; `header(model, plan, &Style)` appends the
+plan label.
+
 ## Out of scope / unchanged
 
 Input parsing, the last-known-usage cache and its merge/persist logic, XDG paths, error-handling

@@ -25,36 +25,27 @@ pub fn fmt_countdown(secs: i64) -> String {
 pub struct Style {
     pub track: u8,
     pub dim: u8,
-    pub good: u8,
-    pub warn: u8,
-    pub crit: u8,
-    pub warn_at: u8,
-    pub crit_at: u8,
+    /// The Claude-brand fill color for filled bar cells.
+    pub fill: u8,
     pub width: usize,
     pub filled: String,
     pub empty: String,
-}
-
-/// Threshold color for a bar at `pct`: good below `warn_at`, warn up to
-/// `crit_at`, crit at or above `crit_at`.
-pub fn fill_color(pct: u8, s: &Style) -> u8 {
-    if pct >= s.crit_at {
-        s.crit
-    } else if pct >= s.warn_at {
-        s.warn
-    } else {
-        s.good
-    }
+    /// Render the bar with hi-res braille dots (2 sub-columns per cell) instead
+    /// of block glyphs. Each cell rests on a baseline so empty cells stay visible.
+    pub braille: bool,
 }
 
 pub fn filled_cells(pct: u8, width: usize) -> usize {
     (pct.min(100) as usize * width + 50) / 100
 }
 
-/// Render a bar whose length is `bar_pct` and whose fill uses an explicit
-/// 256-color. Splitting length from color lets a "remaining" bar show headroom
-/// while still coloring by the underlying danger level.
+/// Render a bar of length `bar_pct` with an explicit fill color. Splitting the
+/// color out keeps the door open for per-row coloring; today every row uses the
+/// brand fill.
 pub fn bar_colored(bar_pct: u8, color: u8, s: &Style) -> String {
+    if s.braille {
+        return braille_bar(bar_pct, color, s);
+    }
     let f = filled_cells(bar_pct, s.width);
     let e = s.width - f;
     let mut out = format!("\x1b[38;5;{}m", color);
@@ -69,14 +60,48 @@ pub fn bar_colored(bar_pct: u8, color: u8, s: &Style) -> String {
     out
 }
 
-/// Used/fullness bar: length and threshold color both track `pct`.
-pub fn bar(pct: u8, s: &Style) -> String {
-    bar_colored(pct, fill_color(pct, s), s)
+/// Hi-res braille bar. Each cell is a braille glyph (base U+2800) with two
+/// horizontal sub-columns, so `width` cells give `2*width` steps of resolution.
+/// Dots 7,8 (`0xC0`) are always lit as a baseline; the left sub-column adds dots
+/// 1,2,3 (`0x07`) and the right adds 4,5,6 (`0x38`). A cell with any lit column
+/// is drawn in the fill color, otherwise the track color.
+fn braille_bar(bar_pct: u8, color: u8, s: &Style) -> String {
+    let subcols = 2 * s.width;
+    let filled = (bar_pct.min(100) as usize * subcols + 50) / 100;
+    let fill_c = format!("\x1b[38;5;{}m", color);
+    let track_c = format!("\x1b[38;5;{}m", s.track);
+    let mut out = String::new();
+    for cell in 0..s.width {
+        let left = 2 * cell < filled;
+        let right = 2 * cell + 1 < filled;
+        let mut bits: u32 = 0xC0; // baseline dots 7,8
+        if left {
+            bits |= 0x07; // dots 1,2,3
+        }
+        if right {
+            bits |= 0x38; // dots 4,5,6
+        }
+        let glyph = char::from_u32(0x2800 + bits).unwrap_or('⣀');
+        out.push_str(if left || right { &fill_c } else { &track_c });
+        out.push(glyph);
+    }
+    out.push_str("\x1b[0m");
+    out
 }
 
-/// Bold model-name header line.
-pub fn header(model: &str) -> String {
-    format!("\x1b[1m{model}\x1b[0m")
+/// Brand-colored bar: length tracks `pct`, fill is the brand color.
+pub fn bar(pct: u8, s: &Style) -> String {
+    bar_colored(pct, s.fill, s)
+}
+
+/// Bold model-name header line, with an optional dim plan/tier label appended
+/// (e.g. "Opus 4.8 (1M context)  Max (20x)").
+pub fn header(model: &str, plan: &str, s: &Style) -> String {
+    if plan.is_empty() {
+        format!("\x1b[1m{model}\x1b[0m")
+    } else {
+        format!("\x1b[1m{model}\x1b[0m  \x1b[38;5;{dim}m{plan}\x1b[0m", dim = s.dim)
+    }
 }
 
 /// One aligned gauge row: bold label (padded to 8), bar, right-aligned
@@ -91,27 +116,6 @@ pub fn row(label: &str, pct: Option<u8>, value: &str, s: &Style) -> String {
         "\x1b[1m{label:<8}\x1b[0m {barstr}  {dim}{pdisp}\x1b[0m  {dim}{value}\x1b[0m",
         barstr = bar(bar_pct, s),
     )
-}
-
-/// A remaining/headroom gauge row: the bar length and the `N% left` label show
-/// what is LEFT, while the color still reflects danger (driven by the underlying
-/// USED percentage — a short red bar means little left). `used` is 0..=100.
-pub fn row_remaining(label: &str, used: Option<u8>, value: &str, s: &Style) -> String {
-    let dim = format!("\x1b[38;5;{}m", s.dim);
-    let (pdisp, barstr) = match used {
-        // Pad to the same 9-char width as "NNN% left" so the value column stays
-        // aligned when a sibling row has data and this one does not.
-        None => (format!("{:>9}", "--"), bar_colored(0, s.track, s)),
-        Some(u) => {
-            let u = u.min(100);
-            let remaining = 100 - u;
-            (
-                format!("{:>3}% left", remaining),
-                bar_colored(remaining, fill_color(u, s), s),
-            )
-        }
-    };
-    format!("\x1b[1m{label:<8}\x1b[0m {barstr}  {dim}{pdisp}\x1b[0m  {dim}{value}\x1b[0m")
 }
 
 #[cfg(test)]
@@ -143,26 +147,12 @@ mod tests {
         Style {
             track: 240,
             dim: 245,
-            good: 71,
-            warn: 179,
-            crit: 167,
-            warn_at: 50,
-            crit_at: 80,
+            fill: 173,
             width: 12,
             filled: "#".into(),
             empty: ".".into(),
+            braille: false,
         }
-    }
-
-    #[test]
-    fn threshold_fill_color() {
-        let s = test_style();
-        assert_eq!(fill_color(10, &s), 71); // good
-        assert_eq!(fill_color(49, &s), 71);
-        assert_eq!(fill_color(50, &s), 179); // warn at cutoff
-        assert_eq!(fill_color(79, &s), 179);
-        assert_eq!(fill_color(80, &s), 167); // crit at cutoff
-        assert_eq!(fill_color(100, &s), 167);
     }
 
     #[test]
@@ -177,20 +167,37 @@ mod tests {
     }
 
     #[test]
-    fn bar_uses_threshold_color() {
+    fn bar_uses_brand_fill() {
         let s = test_style();
-        let good = bar(30, &s);
-        assert!(good.starts_with("\x1b[38;5;71m")); // green fill
-        let crit = bar(90, &s);
-        assert!(crit.starts_with("\x1b[38;5;167m")); // red fill
-        assert_eq!(bar(50, &s).matches('#').count(), 6);
-        assert_eq!(bar(50, &s).matches('.').count(), 6);
-        assert!(crit.ends_with("\x1b[0m"));
+        let b = bar(50, &s);
+        assert!(b.starts_with("\x1b[38;5;173m")); // brand orange fill
+        assert_eq!(b.matches('#').count(), 6);
+        assert_eq!(b.matches('.').count(), 6);
+        assert!(b.ends_with("\x1b[0m"));
+    }
+
+    #[test]
+    fn braille_bar_renders_dots() {
+        let mut s = test_style();
+        s.braille = true;
+        // 100% -> every cell full (⣿); 0% -> every cell baseline (⣀).
+        assert_eq!(bar(100, &s).matches('⣿').count(), 12);
+        assert_eq!(bar(0, &s).matches('⣀').count(), 12);
+        // 50% -> half full cells, half baseline; orange fill leads.
+        let mid = bar(50, &s);
+        assert_eq!(mid.matches('⣿').count(), 6);
+        assert_eq!(mid.matches('⣀').count(), 6);
+        assert!(mid.starts_with("\x1b[38;5;173m"));
+        assert!(mid.ends_with("\x1b[0m"));
     }
 
     #[test]
     fn header_is_bold() {
-        assert_eq!(header("Opus 4.8"), "\x1b[1mOpus 4.8\x1b[0m");
+        let s = test_style();
+        assert_eq!(header("Opus 4.8", "", &s), "\x1b[1mOpus 4.8\x1b[0m");
+        let with_plan = header("Opus 4.8", "Max (20x)", &s);
+        assert!(with_plan.starts_with("\x1b[1mOpus 4.8\x1b[0m"));
+        assert!(with_plan.contains("Max (20x)"));
     }
 
     #[test]
@@ -208,59 +215,5 @@ mod tests {
         let r = row("7d", None, "--", &s);
         assert!(r.contains("  --"));
         assert!(!r.contains('%'));
-    }
-
-    #[test]
-    fn row_remaining_shows_headroom() {
-        let s = test_style();
-        // 42% used -> 58% left, still green (danger by used% = 42 < warn_at).
-        let r = row_remaining("5h", Some(42), "2h 15m", &s);
-        assert!(r.contains("58% left"));
-        assert!(r.contains("2h 15m"));
-        assert!(r.contains("\x1b[38;5;71m")); // green fill (headroom, low danger)
-        assert_eq!(bar_colored(58, 71, &s).matches('#').count(), 7); // 58% of 12 ≈ 7 cells
-    }
-
-    #[test]
-    fn row_remaining_low_is_red() {
-        let s = test_style();
-        // 88% used -> 12% left, red (danger by used% = 88 >= crit_at).
-        let r = row_remaining("7d", Some(88), "4d 6h", &s);
-        assert!(r.contains("12% left"));
-        assert!(r.contains("\x1b[38;5;167m")); // red fill = little left + dangerous
-    }
-
-    #[test]
-    fn row_remaining_without_data() {
-        let s = test_style();
-        let r = row_remaining("5h", None, "--", &s);
-        assert!(r.contains("--"));
-        assert!(!r.contains("% left"));
-    }
-
-    #[test]
-    fn row_remaining_columns_align() {
-        let s = test_style();
-        // Visible width up to an (empty) value must match with and without data,
-        // so the value column lines up across sibling rows.
-        let visible = |x: String| -> usize {
-            let mut n = 0;
-            let mut it = x.chars().peekable();
-            while let Some(c) = it.next() {
-                if c == '\x1b' {
-                    while let Some(d) = it.next() {
-                        if d == 'm' {
-                            break;
-                        }
-                    }
-                } else {
-                    n += 1;
-                }
-            }
-            n
-        };
-        let with = visible(row_remaining("5h", Some(42), "", &s));
-        let without = visible(row_remaining("5h", None, "", &s));
-        assert_eq!(with, without, "value column must align with and without data");
     }
 }

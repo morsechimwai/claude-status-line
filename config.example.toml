@@ -2,22 +2,15 @@
 # Every key is optional; omitted keys use the defaults shown here.
 
 [colors]
-track = 240   # 256-color index for the empty track
-dim   = 245   # 256-color index for percentage / value text
-# Bars are colored by usage: good below warn_at, warn up to crit_at, crit above.
-# Set good = warn = crit for a single solid color instead.
-good  = 71    # green  — plenty of headroom
-warn  = 179   # amber  — getting close
-crit  = 167   # red    — near the limit
-
-[thresholds]
-warn_at = 50  # % at which the bar turns the warn color
-crit_at = 80  # % at which the bar turns the crit color
+fill  = 68    # 256-color index for filled bar cells (Claude usage-panel blue)
+track = 17    # empty track (dark navy)
+dim   = 245   # percentage / value / plan text
 
 [bar]
-width  = 12
-filled = "█"
-empty  = "░"   # light track; set to "█" for a solid gray track
+width   = 12
+braille = true   # hi-res braille dots; set false for a solid block bar
+filled  = "█"    # block-mode filled glyph (used only when braille = false)
+empty   = "░"    # block-mode empty glyph (used only when braille = false)
 
 [rows]
 context = true
@@ -25,7 +18,9 @@ current = true    # the 5-hour window
 weekly  = true    # the 7-day window
 
 [layout]
-model_header = true   # show the model name on its own line above the rows
+model_header = true       # show the model name on its own line
+plan = ""                 # optional plan label shown next to the model, e.g. "Max (20x)"
+                          # (the status-line JSON does not expose your plan — set it here)
 
 [labels]
 context = "Context"
