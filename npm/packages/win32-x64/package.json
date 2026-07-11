@@ -1,0 +1,10 @@
+{
+  "name": "@ccstatus/win32-x64",
+  "version": "0.1.0",
+  "description": "ccstatus prebuilt binary for win32-x64",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/morsechimwai/claude-status-line.git" },
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "files": ["ccstatus.exe"]
+}

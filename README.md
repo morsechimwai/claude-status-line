@@ -14,11 +14,30 @@ Weekly                 ██░░░░░░░░░░ 18% | Jul 14, 3:30 P
 
 ## Install
 
+**Homebrew** (macOS / Linux):
+
+```bash
+brew install morsechimwai/tap/ccstatus
+```
+
+**npm / pnpm / yarn / bun** (downloads the prebuilt binary for your platform):
+
+```bash
+npm  install -g ccstatus
+pnpm add     -g ccstatus
+```
+
+**Cargo** (builds from source):
+
 ```bash
 cargo install ccstatus
 ```
 
 Or download a prebuilt binary from the [Releases](https://github.com/morsechimwai/claude-status-line/releases) page and put it on your `PATH`.
+
+> The Homebrew and Cargo installs are pure native binaries. The npm package wraps
+> the same binary in a thin Node launcher (~tens of ms startup) for people who
+> prefer the npm toolchain.
 
 ## Configure Claude Code
 
