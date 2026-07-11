@@ -1,5 +1,5 @@
 use ccstatus::{cache, config, input, render};
-use chrono::{DateTime, Local, TimeZone};
+use chrono::Local;
 use std::io::Read;
 use std::io::Write;
 
@@ -43,14 +43,15 @@ fn window_to_cache(live: Option<&input::Window>) -> Option<cache::CachedWindow> 
     })
 }
 
-fn resolved_row(
-    label: &str,
-    r: &Resolved,
-    style: &render::Style,
-    now: &DateTime<Local>,
-) -> String {
-    let dt = r.resets_at.and_then(|e| Local.timestamp_opt(e, 0).single());
-    let value = render::fmt_reset(dt, now);
+/// A rate-limit gauge row: percentage bar plus a "resets in <countdown>" value,
+/// or "--" when there is no future reset time to show.
+fn resolved_row(label: &str, r: &Resolved, style: &render::Style, now_ts: i64) -> String {
+    let value = match r.resets_at {
+        Some(reset) if reset > now_ts => {
+            format!("resets in {}", render::fmt_countdown(reset - now_ts))
+        }
+        _ => "--".to_string(),
+    };
     render::row(label, r.pct, &value, style)
 }
 
@@ -62,28 +63,38 @@ fn main() {
     let cfg = config::Config::load();
     let style = cfg.style();
     let now = Local::now();
+    let now_ts = now.timestamp();
 
     let mut lines: Vec<String> = Vec::new();
 
+    if cfg.layout.model_header {
+        lines.push(render::header(&inp.model.display_name));
+    }
+
     if cfg.rows.context {
         let size = inp.context_window.context_window_size as u64;
-        let used = (inp.context_window.total_input_tokens
-            + inp.context_window.total_output_tokens) as u64;
+        let input_tokens = inp.context_window.total_input_tokens as u64;
+        let output_tokens = inp.context_window.total_output_tokens as u64;
         let pct = clamp_pct(inp.context_window.used_percentage);
-        let value = format!("{}/{}", render::fmt_tokens(used), render::fmt_tokens(size));
-        lines.push(render::row(&inp.model.display_name, Some(pct), &value, &style));
+        let value = format!(
+            "↑{} ↓{} / {}",
+            render::fmt_tokens(input_tokens),
+            render::fmt_tokens(output_tokens),
+            render::fmt_tokens(size),
+        );
+        lines.push(render::row(&cfg.labels.context, Some(pct), &value, &style));
     }
 
     let cached = cache::load();
     let five = resolve_window(
         inp.rate_limits.five_hour.as_ref(),
         cached.as_ref().and_then(|c| c.five_hour.clone()),
-        now.timestamp(),
+        now_ts,
     );
     let seven = resolve_window(
         inp.rate_limits.seven_day.as_ref(),
         cached.as_ref().and_then(|c| c.seven_day.clone()),
-        now.timestamp(),
+        now_ts,
     );
 
     // Merge live into the loaded cache: carry forward a window that has no
@@ -98,10 +109,10 @@ fn main() {
     }
 
     if cfg.rows.current {
-        lines.push(resolved_row(&cfg.labels.current, &five, &style, &now));
+        lines.push(resolved_row(&cfg.labels.current, &five, &style, now_ts));
     }
     if cfg.rows.weekly {
-        lines.push(resolved_row(&cfg.labels.weekly, &seven, &style, &now));
+        lines.push(resolved_row(&cfg.labels.weekly, &seven, &style, now_ts));
     }
 
     if !lines.is_empty() {
