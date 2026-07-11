@@ -53,6 +53,18 @@ pub fn bar(pct: u8, s: &Style) -> String {
     out
 }
 
+pub fn row(label: &str, pct: Option<u8>, value: &str, s: &Style) -> String {
+    let dim = format!("\x1b[38;5;{}m", s.dim);
+    let (pdisp, bar_pct) = match pct {
+        None => (" --".to_string(), 0u8),
+        Some(p) => (format!("{:>2}%", p), p),
+    };
+    format!(
+        "\x1b[1m{label:<8}\x1b[0m {barstr} {dim}{pdisp}\x1b[0m {dim}|\x1b[0m {dim}{value}\x1b[0m",
+        barstr = bar(bar_pct, s),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,5 +116,23 @@ mod tests {
         assert_eq!(b.matches('.').count(), 6);
         assert!(b.starts_with("\x1b[38;5;173m"));
         assert!(b.ends_with("\x1b[0m"));
+    }
+
+    #[test]
+    fn row_with_pct() {
+        let s = test_style();
+        let r = row("Current", Some(42), "3:30 PM", &s);
+        assert!(r.contains("\x1b[1mCurrent \x1b[0m")); // bold label left-padded to 8
+        assert!(r.contains("42%"));
+        assert!(r.contains("3:30 PM"));
+        assert!(r.contains('|'));
+    }
+
+    #[test]
+    fn row_without_pct() {
+        let s = test_style();
+        let r = row("Weekly", None, "--", &s);
+        assert!(r.contains(" --"));
+        assert!(!r.contains('%'));
     }
 }
