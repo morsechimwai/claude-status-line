@@ -1,0 +1,21 @@
+# ccstatus configuration — copy to ~/.config/ccstatus/config.toml
+# Every key is optional; omitted keys use the defaults shown here.
+
+[colors]
+fill  = 173   # 256-color index for the filled part of each bar
+track = 240   # 256-color index for the empty track
+dim   = 245   # 256-color index for percentage/value text
+
+[bar]
+width  = 12
+filled = "█"
+empty  = "█"   # set to "░" for a lighter track
+
+[rows]
+context = true
+current = true
+weekly  = true
+
+[labels]
+current = "Current"
+weekly  = "Weekly"
