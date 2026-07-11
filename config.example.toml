@@ -2,20 +2,32 @@
 # Every key is optional; omitted keys use the defaults shown here.
 
 [colors]
-fill  = 173   # 256-color index for the filled part of each bar
 track = 240   # 256-color index for the empty track
-dim   = 245   # 256-color index for percentage/value text
+dim   = 245   # 256-color index for percentage / value text
+# Bars are colored by usage: good below warn_at, warn up to crit_at, crit above.
+# Set good = warn = crit for a single solid color instead.
+good  = 71    # green  — plenty of headroom
+warn  = 179   # amber  — getting close
+crit  = 167   # red    — near the limit
+
+[thresholds]
+warn_at = 50  # % at which the bar turns the warn color
+crit_at = 80  # % at which the bar turns the crit color
 
 [bar]
 width  = 12
 filled = "█"
-empty  = "█"   # set to "░" for a lighter track
+empty  = "░"   # light track; set to "█" for a solid gray track
 
 [rows]
 context = true
-current = true
-weekly  = true
+current = true    # the 5-hour window
+weekly  = true    # the 7-day window
+
+[layout]
+model_header = true   # show the model name on its own line above the rows
 
 [labels]
-current = "Current"
-weekly  = "Weekly"
+context = "Context"
+current = "5h"
+weekly  = "7d"

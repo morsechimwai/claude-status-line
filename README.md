@@ -1,16 +1,22 @@
 # ccstatus
 
-Fast Claude Code status line with usage bars. Renders three rows — model /
-context tokens, the 5-hour rate-limit window, and the 7-day window — and shows
-**cached last-known usage instantly on session start** instead of blanks.
+Fast Claude Code status line with usage bars. Renders the model, your context
+window, and both rate-limit windows (5-hour and 7-day) — with bars that turn
+**green → amber → red** as you approach a limit, and **cached last-known usage
+shown instantly on session start** instead of blanks.
 
 Single Rust binary, no runtime dependencies.
 
 ```
-Opus 4.8 (1M context)  ████░░░░░░░░  0% | 0/1.0m
-Current                █████░░░░░░░ 42% | 3:30 PM
-Weekly                 ██░░░░░░░░░░ 18% | Jul 14, 3:30 PM
+Opus 4.8 (1M context)
+Context  ████░░░░░░░░   34%  ↑280k ↓60k / 1.0m
+5h       █████░░░░░░░   42%  resets in 2h 15m
+7d       ███████████░   88%  resets in 4d 6h
 ```
+
+The context row shows the input/output token split; the rate-limit rows count
+down to their reset. Colors, thresholds, bar glyphs, labels, and which rows show
+are all configurable — see [`config.example.toml`](config.example.toml).
 
 ## Install
 
