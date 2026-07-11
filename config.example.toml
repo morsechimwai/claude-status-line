@@ -19,8 +19,10 @@ weekly  = true    # the 7-day window
 
 [layout]
 model_header = true       # show the model name on its own line
-plan = ""                 # optional plan label shown next to the model, e.g. "Max (20x)"
-                          # (the status-line JSON does not expose your plan — set it here)
+# Plan label shown next to the model. When empty and plan_auto is true, it is
+# auto-detected from ~/.claude.json (only the rate-limit tier field is read).
+plan = ""                 # set to override, e.g. "Max (20x)"
+plan_auto = true          # set false to never read ~/.claude.json
 
 [labels]
 context = "Context"
