@@ -33,7 +33,7 @@ export const FEATURES = [
   { icon: "clock", title: "5h & 7d windows",
     body: "Both rate-limit windows with live countdowns to reset — the numbers Claude Code actually limits on." },
   { icon: "check", title: "Plan auto-detect",
-    body: "Reads only the rate-limit tier from your account and maps it to a short plan label like Max (20x)." },
+    body: "Reads your account's plan and maps it to a short plan label like Max (20x)." },
   { icon: "shield", title: "Zero dependencies",
     body: "One static Rust binary. No Node, no Python, no network calls, no auth. It just reads and draws." },
   { icon: "sliders", title: "Fully configurable",
