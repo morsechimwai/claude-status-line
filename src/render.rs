@@ -60,6 +60,8 @@ pub fn bar_colored(bar_pct: u8, color: u8, s: &Style) -> String {
     out
 }
 
+/// KEEP IN SYNC with `site/lib/braille.ts` — the web landing page ports this
+/// algorithm (see docs/adr/0001-port-braille-algorithm-to-web.md).
 /// Hi-res braille bar. Each cell is a braille glyph (base U+2800) with two
 /// horizontal sub-columns, so `width` cells give `2*width` steps of resolution.
 /// Dots 7,8 (`0xC0`) are always lit as a baseline; the left sub-column adds dots
