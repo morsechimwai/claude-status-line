@@ -4,3 +4,7 @@
 npm/packages/*/ccstatus
 npm/packages/*/ccstatus.exe
 npm/**/*.tgz
+
+site/node_modules
+site/.next
+site/out

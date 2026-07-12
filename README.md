@@ -4,6 +4,8 @@ Fast Claude Code status line with usage bars. Renders the model, your context
 window, and both rate-limit windows (5-hour and 7-day) as hi-res braille gauges,
 with **cached last-known usage shown instantly on session start** instead of blanks.
 
+**Site:** https://ccstatus.vercel.app
+
 Single Rust binary, no runtime dependencies.
 
 <p align="center"><img src="assets/preview.svg" alt="ccstatus terminal preview" width="660"></p>
