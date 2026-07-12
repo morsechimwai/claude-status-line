@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { brailleCells, blockCells, type Cell } from "@/lib/braille";
 import { PRESETS } from "@/lib/product";
 
@@ -25,6 +25,23 @@ export default function TerminalDemo() {
   const [preset, setPreset] = useState<(typeof PRESETS)[number]>(PRESETS[0]);
   const [braille, setBraille] = useState(true);
   const render = braille ? brailleCells : blockCells;
+  const presetRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const selectPresetAt = (index: number) => {
+    const wrapped = (index + PRESETS.length) % PRESETS.length;
+    setPreset(PRESETS[wrapped]);
+    presetRefs.current[wrapped]?.focus();
+  };
+
+  const handlePresetKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      selectPresetAt(index + 1);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      selectPresetAt(index - 1);
+    }
+  };
 
   return (
     <div style={{ ["--accent" as string]: preset.color }}>
@@ -49,29 +66,35 @@ export default function TerminalDemo() {
         </div>
       </div>
 
-      {/* preset switcher — radio group */}
-      <div role="radiogroup" aria-label="Bar color preset" className="mt-4 flex flex-wrap justify-center gap-1.5">
-        {PRESETS.map((p) => (
-          <button
-            key={p.id}
-            role="radio"
-            aria-checked={p.id === preset.id}
-            onClick={() => setPreset(p)}
-            className="cursor-pointer rounded-full border px-3 py-1.5 text-[0.78rem] transition-colors"
-            style={{
-              color: p.id === preset.id ? "var(--bg)" : "var(--dim)",
-              background: p.id === preset.id ? p.color : "transparent",
-              borderColor: p.id === preset.id ? p.color : "var(--border)",
-              fontWeight: p.id === preset.id ? 700 : 400,
-            }}
-          >
-            <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ background: p.color }} />
-            {p.label}
-          </button>
-        ))}
+      {/* preset switcher — radio group + braille/block toggle, same row */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+        <div role="radiogroup" aria-label="Bar color preset" className="flex flex-wrap justify-center gap-1.5">
+          {PRESETS.map((p, i) => (
+            <button
+              key={p.id}
+              ref={(el) => { presetRefs.current[i] = el; }}
+              role="radio"
+              aria-checked={p.id === preset.id}
+              tabIndex={p.id === preset.id ? 0 : -1}
+              onClick={() => setPreset(p)}
+              onKeyDown={(e) => handlePresetKeyDown(e, i)}
+              className="cursor-pointer rounded-full border px-3 py-1.5 text-[0.78rem] transition-colors"
+              style={{
+                color: p.id === preset.id ? "var(--bg)" : "var(--dim)",
+                background: p.id === preset.id ? p.color : "transparent",
+                borderColor: p.id === preset.id ? p.color : "var(--border)",
+                fontWeight: p.id === preset.id ? 700 : 400,
+              }}
+            >
+              <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ background: p.color }} />
+              {p.label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => setBraille((b) => !b)}
           aria-pressed={!braille}
+          aria-label="Toggle bar style between braille and block"
           className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-[0.78rem] text-[var(--dim)] transition-colors hover:text-[var(--fg)]"
         >
           {braille ? "braille" : "block"}

@@ -7,7 +7,7 @@ const PATHS: Record<string, string> = {
   sliders: "M4 6h16M4 12h10M4 18h7",
 };
 
-export default function Icon({ name }: { name: string }) {
+export default function Icon({ name }: { name: keyof typeof PATHS }) {
   return (
     <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {name === "clock" && <circle cx="12" cy="12" r="9" />}
