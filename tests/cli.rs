@@ -49,7 +49,7 @@ fn renders_header_and_three_rows() {
     // Rate-limit rows show used percentage + reset countdown.
     assert!(out.contains("42%"));
     assert!(out.contains("18%"));
-    assert!(out.contains("↑280k ↓60k / 1.0m"), "context token detail in: {out}");
+    assert!(out.contains("340k / 1.0m"), "context token detail in: {out}");
     assert!(out.contains("resets in"), "reset countdown in: {out}");
 }
 

@@ -80,15 +80,10 @@ fn main() {
 
     if cfg.rows.context {
         let size = inp.context_window.context_window_size as u64;
-        let input_tokens = inp.context_window.total_input_tokens as u64;
-        let output_tokens = inp.context_window.total_output_tokens as u64;
+        let used = (inp.context_window.total_input_tokens
+            + inp.context_window.total_output_tokens) as u64;
         let pct = clamp_pct(inp.context_window.used_percentage);
-        let value = format!(
-            "↑{} ↓{} / {}",
-            render::fmt_tokens(input_tokens),
-            render::fmt_tokens(output_tokens),
-            render::fmt_tokens(size),
-        );
+        let value = format!("{} / {}", render::fmt_tokens(used), render::fmt_tokens(size));
         lines.push(render::row(&cfg.labels.context, Some(pct), &value, &style));
     }
 

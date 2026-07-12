@@ -12,13 +12,13 @@ From the design-exploration gallery, the selected treatment is **B1 + C1 + L2 + 
 - **B1 — light track:** filled `█`, empty `░`.
 - **C1 — threshold color:** each bar is colored by that row's own percentage.
 - **L2 — aligned columns:** short fixed-width labels so bars, percentages, and values line up.
-- **I3 — token detail:** the context row shows the input/output token split.
+- **I3 — token detail:** the context row shows used tokens (input+output) over context size.
 
 ## Rendered target
 
 ```
 Opus 4.8 (1M context)
-Context  ████░░░░░░░░  34%  ↑280k ↓60k / 1.0m
+Context  ████░░░░░░░░  34%  340k / 1.0m
 5h       █████░░░░░░░  42%  resets in 2h 15m
 7d       ██░░░░░░░░░░  18%  resets in 4d 6h
 ```
@@ -50,9 +50,9 @@ single-color bar is achieved by setting `good = warn = crit`.
 
 ## Information per row
 
-- **Context row value:** `↑{input} ↓{output} / {size}`, each count via `fmt_tokens`
-  (e.g. `↑280k ↓60k / 1.0m`). Data comes from `context_window.{total_input_tokens,
-  total_output_tokens, context_window_size}`.
+- **Context row value:** `{used} / {size}` via `fmt_tokens`, where `used = total_input_tokens
+  + total_output_tokens` (e.g. `340k / 1.0m`). Data comes from
+  `context_window.{total_input_tokens, total_output_tokens, context_window_size}`.
 - **5h / 7d row value:** `resets in {countdown}` where `countdown` is `fmt_countdown` of
   `resets_at - now`. If `resets_at` is absent **or already in the past** (rolled-over cache),
   show `--` instead.
@@ -159,10 +159,14 @@ direction after iterating on the live output.
 - **No Fable / per-model row** — the status-line JSON exposes only the aggregate
   `five_hour` and `seven_day` windows (confirmed against the Claude Code
   statusline docs); there is no per-model ("Fable") usage to render.
+- **Context value: `used / size`** (replaces `↑in ↓out / size`) — `used =
+  total_input_tokens + total_output_tokens`. The `↑/↓` split misled: output tokens
+  barely occupy context, so the split implied both mattered when only the sum does.
+  Single figure reads as "how full" alongside the bar.
 
 ```
 Opus 4.8 (1M context)  Max (20x)
-Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  ↑180k ↓45k / 1.0m
+Context  ⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀⣀   22%  225k / 1.0m
 5h       ⣿⣿⣿⣇⣀⣀⣀⣀⣀⣀⣀⣀   28%  resets in 2h 23m
 7d       ⣿⣿⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀   33%  resets in 2d 7h
 ```
