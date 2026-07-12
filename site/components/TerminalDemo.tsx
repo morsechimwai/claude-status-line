@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { brailleCells, blockCells, type Cell } from "@/lib/braille";
+import { brailleDotCells, blockCells, type Cell, type DotCell } from "@/lib/braille";
 import { PRESETS } from "@/lib/product";
 
 const ROWS = [
@@ -9,9 +9,37 @@ const ROWS = [
   { label: "7d", pct: 31, meta: "resets in 2d 7h" },
 ];
 
-function Bar({ cells }: { cells: Cell[] }) {
+// Braille bar drawn as dots (dense, terminal-faithful) instead of relying on a
+// web font's sparse braille glyphs. Dot layout matches src/render.rs / preview.svg:
+// baseline dots (bottom row, both columns) always lit; each filled sub-column
+// adds its 3 upper dots. Fill color when the cell has any lit sub-column.
+const CW = 9, DOT_R = 1.6, SVG_H = 17;
+const COL_X = [2.7, 6.2];
+const ROW_Y = [3.3, 7.0, 10.7, 14.4];
+
+function BrailleBar({ dots }: { dots: DotCell[] }) {
+  const w = dots.length * CW;
+  const circles: React.ReactNode[] = [];
+  dots.forEach((d, i) => {
+    const x = i * CW;
+    const color = d.filled ? "var(--accent)" : "var(--track)";
+    // baseline dots (bottom row), both columns, always
+    circles.push(<circle key={`${i}b0`} cx={x + COL_X[0]} cy={ROW_Y[3]} r={DOT_R} fill={color} />);
+    circles.push(<circle key={`${i}b1`} cx={x + COL_X[1]} cy={ROW_Y[3]} r={DOT_R} fill={color} />);
+    if (d.left) for (let r = 0; r < 3; r++) circles.push(<circle key={`${i}l${r}`} cx={x + COL_X[0]} cy={ROW_Y[r]} r={DOT_R} fill={color} />);
+    if (d.right) for (let r = 0; r < 3; r++) circles.push(<circle key={`${i}r${r}`} cx={x + COL_X[1]} cy={ROW_Y[r]} r={DOT_R} fill={color} />);
+  });
   return (
-    <span className="tracking-normal text-[15px] [font-feature-settings:normal]" aria-hidden="true">
+    <svg width={w} height={SVG_H} viewBox={`0 0 ${w} ${SVG_H}`} className="inline-block shrink-0 align-middle" aria-hidden="true">
+      {circles}
+    </svg>
+  );
+}
+
+// Block-bar mode keeps solid glyphs (they render dense in any monospace font).
+function BlockBar({ cells }: { cells: Cell[] }) {
+  return (
+    <span className="text-[15px] align-middle" aria-hidden="true">
       {cells.map((c, i) => (
         <span key={i} style={{ color: c.filled ? "var(--accent)" : "var(--track)" }}>
           {c.glyph}
@@ -24,7 +52,6 @@ function Bar({ cells }: { cells: Cell[] }) {
 export default function TerminalDemo() {
   const [preset, setPreset] = useState<(typeof PRESETS)[number]>(PRESETS[0]);
   const [braille, setBraille] = useState(true);
-  const render = braille ? brailleCells : blockCells;
   const presetRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const selectPresetAt = (index: number) => {
@@ -58,7 +85,7 @@ export default function TerminalDemo() {
           {ROWS.map((r) => (
             <div key={r.label} className="flex items-baseline gap-2 whitespace-pre">
               <span className="inline-block w-[5.2em] font-bold text-[var(--fg)]">{r.label}</span>
-              <Bar cells={render(r.pct)} />
+              {braille ? <BrailleBar dots={brailleDotCells(r.pct)} /> : <BlockBar cells={blockCells(r.pct)} />}
               <span className="w-[3.2em] text-right tabular-nums text-[var(--dim)]">{r.pct}%</span>
               <span className="text-[13px] text-[var(--dim)]">{r.meta}</span>
             </div>

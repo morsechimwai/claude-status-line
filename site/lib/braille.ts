@@ -26,6 +26,20 @@ export function brailleCells(pct: number, width = 12): Cell[] {
   return cells;
 }
 
+// Per-cell sub-column state, for drawing the bar as dots (dense, terminal-faithful)
+// rather than relying on a web font's sparse braille glyphs. Same geometry as
+// brailleCells: baseline dots always lit; left/right sub-columns light their 3 dots.
+export type DotCell = { left: boolean; right: boolean; filled: boolean };
+
+export function brailleDotCells(pct: number, width = 12): DotCell[] {
+  const filled = filledSubcols(pct, width);
+  return Array.from({ length: width }, (_, cell) => {
+    const left = 2 * cell < filled;
+    const right = 2 * cell + 1 < filled;
+    return { left, right, filled: left || right };
+  });
+}
+
 // Block-bar mode: filled = (pct * width + 50) / 100  (matches render.rs filled_cells).
 export function blockCells(pct: number, width = 12): Cell[] {
   const filled = Math.floor((clampPct(pct) * width + 50) / 100);
