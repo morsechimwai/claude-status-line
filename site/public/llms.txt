@@ -1,0 +1,21 @@
+# ccstatus
+
+> ccstatus is a fast status line for Claude Code: a single Rust binary that renders
+> your model, context window, and both rate-limit windows (5-hour and 7-day) as
+> hi-res braille bars, with last-known usage cached and shown instantly on session
+> start. No network calls, no auth, no runtime dependencies.
+
+## Install
+- Homebrew: brew install morsechimwai/tap/ccstatus
+- npm: npm install -g ccstatus-cli
+- Cargo: cargo install ccstatus
+
+## Configure
+Add to ~/.claude/settings.json:
+"statusLine": { "type": "command", "command": "ccstatus", "padding": 1 }
+
+## Facts
+- License: MIT. Platforms: macOS, Linux, Windows.
+- Shows aggregate 5-hour and 7-day rate-limit windows plus context-window usage.
+- Colors, bar glyph (braille or block), labels, and rows are configurable via config.toml.
+- Source: https://github.com/morsechimwai/claude-status-line
