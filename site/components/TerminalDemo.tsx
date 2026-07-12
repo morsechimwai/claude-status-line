@@ -11,7 +11,7 @@ const ROWS = [
 
 function Bar({ cells }: { cells: Cell[] }) {
   return (
-    <span className="tracking-widest text-[15px]" aria-hidden="true">
+    <span className="tracking-normal text-[15px] [font-feature-settings:normal]" aria-hidden="true">
       {cells.map((c, i) => (
         <span key={i} style={{ color: c.filled ? "var(--accent)" : "var(--track)" }}>
           {c.glyph}
