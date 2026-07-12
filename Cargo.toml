@@ -9,6 +9,7 @@ repository = "https://github.com/morsechimwai/claude-status-line"
 readme = "README.md"
 keywords = ["claude", "statusline", "cli", "usage"]
 categories = ["command-line-utilities"]
+exclude = ["site/", "docs/", "scripts/", "npm/"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
