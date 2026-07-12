@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   env: {
     NEXT_PUBLIC_SITE_URL:
-      process.env.NEXT_PUBLIC_SITE_URL ?? "https://ccstatus.vercel.app",
+      process.env.NEXT_PUBLIC_SITE_URL ?? "https://claude-status-line-ten.vercel.app",
   },
 };
 
