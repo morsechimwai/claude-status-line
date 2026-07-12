@@ -1,4 +1,4 @@
-const PATHS: Record<string, string> = {
+const PATHS = {
   sparkle: "M12 2v4M12 18v4M2 12h4M18 12h4",
   bars: "M4 18V9M9 18V5M14 18v-7M19 18v-4",
   clock: "M12 7v5l3 2",
