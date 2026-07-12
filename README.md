@@ -33,8 +33,8 @@ brew install morsechimwai/tap/ccstatus
 **npm / pnpm / yarn / bun** (downloads the prebuilt binary for your platform):
 
 ```bash
-npm  install -g ccstatus
-pnpm add     -g ccstatus
+npm  install -g ccstatus-cli
+pnpm add     -g ccstatus-cli
 ```
 
 **Cargo** (builds from source):

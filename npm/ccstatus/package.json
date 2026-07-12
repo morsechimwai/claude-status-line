@@ -1,5 +1,5 @@
 {
-  "name": "ccstatus",
+  "name": "ccstatus-cli",
   "version": "0.6.0",
   "description": "Fast Claude Code status line with cached usage bars",
   "bin": {

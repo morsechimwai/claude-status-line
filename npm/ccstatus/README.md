@@ -1,12 +1,13 @@
-# ccstatus (npm)
+# ccstatus-cli (npm)
 
 Fast Claude Code status line with cached usage bars. This package downloads the
-prebuilt native binary for your platform (via an `@ccstatus/<platform>` optional
-dependency — no install scripts, no build step).
+prebuilt native binary for your platform (via an `@morsechimwai/ccstatus-<platform>`
+optional dependency — no install scripts, no build step). Installs the `ccstatus`
+command.
 
 ```bash
-npm  install -g ccstatus
-pnpm add     -g ccstatus
+npm  install -g ccstatus-cli
+pnpm add     -g ccstatus-cli
 ```
 
 Then point Claude Code at it in `~/.claude/settings.json`:

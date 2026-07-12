@@ -17,7 +17,7 @@ for dir in darwin-arm64 darwin-x64 linux-arm64 linux-x64 win32-x64; do
   ( cd "$ROOT/npm/packages/$dir" && npm publish --access public )
 done
 
-echo "Publishing meta package ccstatus@$VER…"
+echo "Publishing meta package ccstatus-cli@${VER}..."
 ( cd "$ROOT/npm/ccstatus" && npm publish --access public )
 
-echo "Published ccstatus@$VER and all platform packages."
+echo "Published ccstatus-cli@${VER} and all platform packages."
