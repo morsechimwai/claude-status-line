@@ -9,25 +9,29 @@ const ROWS = [
   { label: "7d", pct: 31, meta: "resets in 2d 7h" },
 ];
 
-// Braille bar drawn as dots (dense, terminal-faithful) instead of relying on a
-// web font's sparse braille glyphs. Dot layout matches src/render.rs / preview.svg:
-// baseline dots (bottom row, both columns) always lit; each filled sub-column
-// adds its 3 upper dots. Fill color when the cell has any lit sub-column.
-const CW = 9, DOT_R = 1.6, SVG_H = 17;
-const COL_X = [2.7, 6.2];
-const ROW_Y = [3.3, 7.0, 10.7, 14.4];
+// Braille bar drawn as dots on a UNIFORM grid — every dot column is spaced by the
+// same pitch as every other (no per-cell clustering), so the bar reads as one
+// continuous dotted block like the real terminal font, not gapped cells. Layout
+// matches src/render.rs geometry: baseline dots (bottom row, both sub-columns)
+// always lit; each filled sub-column adds its 3 upper dots.
+const PITCH = 3.4;              // uniform px pitch between adjacent dots (H and V)
+const DOT_R = 1.15;            // fine dots, like the terminal
+const ROWS_N = 4;
+const SVG_H = ROWS_N * PITCH;
 
 function BrailleBar({ dots }: { dots: DotCell[] }) {
-  const w = dots.length * CW;
+  const cols = dots.length * 2;
+  const w = cols * PITCH;
+  const cx = (col: number) => (col + 0.5) * PITCH; // global column index → x
+  const cy = (row: number) => (row + 0.5) * PITCH;
   const circles: React.ReactNode[] = [];
   dots.forEach((d, i) => {
-    const x = i * CW;
+    const xL = cx(2 * i), xR = cx(2 * i + 1);
     const color = d.filled ? "var(--accent)" : "var(--track)";
-    // baseline dots (bottom row), both columns, always
-    circles.push(<circle key={`${i}b0`} cx={x + COL_X[0]} cy={ROW_Y[3]} r={DOT_R} fill={color} />);
-    circles.push(<circle key={`${i}b1`} cx={x + COL_X[1]} cy={ROW_Y[3]} r={DOT_R} fill={color} />);
-    if (d.left) for (let r = 0; r < 3; r++) circles.push(<circle key={`${i}l${r}`} cx={x + COL_X[0]} cy={ROW_Y[r]} r={DOT_R} fill={color} />);
-    if (d.right) for (let r = 0; r < 3; r++) circles.push(<circle key={`${i}r${r}`} cx={x + COL_X[1]} cy={ROW_Y[r]} r={DOT_R} fill={color} />);
+    circles.push(<circle key={`${i}b0`} cx={xL} cy={cy(3)} r={DOT_R} fill={color} />);
+    circles.push(<circle key={`${i}b1`} cx={xR} cy={cy(3)} r={DOT_R} fill={color} />);
+    if (d.left) for (let r = 0; r < 3; r++) circles.push(<circle key={`${i}l${r}`} cx={xL} cy={cy(r)} r={DOT_R} fill={color} />);
+    if (d.right) for (let r = 0; r < 3; r++) circles.push(<circle key={`${i}r${r}`} cx={xR} cy={cy(r)} r={DOT_R} fill={color} />);
   });
   return (
     <svg width={w} height={SVG_H} viewBox={`0 0 ${w} ${SVG_H}`} className="inline-block shrink-0 align-middle" aria-hidden="true">
