@@ -19,14 +19,15 @@ XTERM = {
 FG_DEFAULT = "#e6e4de"   # bold/plain text
 BG = "#0a0b0e"
 STROKE = "#20242c"
-PROMPT_USER = "#6f9f6a"
-PROMPT_DIM = "#565c66"
-TITLE = "#7c8088"
+TOP_RULE = "#2a2e36"     # faint rule above the status block
+BYPASS = "#d97757"       # Claude-brand red for the mode line
+BYPASS_DIM = "#6a5148"   # dimmed parenthetical on the mode line
 
-S = 3                      # supersample for crisp retina-like output
+S = 4                      # render supersample; downsampled by DS at the end
+DS = 2                     # final image is S/DS = 2x the logical size (retina)
 FS = 15 * S
-FONT = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", FS)
-FONT_B = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", FS)  # Menlo bold via synth below
+FONT = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", FS, index=0)   # Regular
+FONT_B = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", FS, index=1)  # Bold
 
 # cell metrics from the font
 asc, desc = FONT.getmetrics()
@@ -34,8 +35,7 @@ CW = FONT.getlength("M")
 LH = int((asc + desc) * 1.32)
 
 PAD = 22 * S
-TITLEBAR = 34 * S
-GAP = 14 * S               # gap under prompt/header handled by line flow
+TOPGAP = 16 * S            # space between the top rule and the first status row
 
 
 def parse(line):
@@ -63,14 +63,15 @@ def parse(line):
 
 
 lines = SRC.rstrip("\n").split("\n")
-# We prepend a shell prompt line for context, like a real terminal.
-prompt = [("morse", PROMPT_USER, True), (" ~/project $ claude", PROMPT_DIM, False)]
-render_lines = [prompt] + [parse(l) for l in lines]
+# The Claude Code input-mode line that sits under the status block.
+bypass = [("▶▶ bypass permissions on", BYPASS, False),
+          (" (shift+tab to cycle)", BYPASS_DIM, False)]
+render_lines = [parse(l) for l in lines] + [bypass]
 
 # canvas size
 max_cols = max(sum(len(t) for t, _, _ in rl) for rl in render_lines)
 W = int(PAD * 2 + max_cols * CW) + 6 * S
-H = TITLEBAR + PAD + len(render_lines) * LH + PAD // 2
+H = PAD + TOPGAP + len(render_lines) * LH + PAD
 
 img = Image.new("RGB", (W, H), BG)
 d = ImageDraw.Draw(img)
@@ -81,13 +82,8 @@ bg = Image.new("RGB", (W, H), BG)
 img = Image.composite(bg, Image.new("RGB", (W, H), (0, 0, 0)), mask)
 d = ImageDraw.Draw(img)
 d.rounded_rectangle([S, S, W - 1 - S, H - 1 - S], radius=12 * S, outline=STROKE, width=S)
-# title bar divider + traffic lights
-d.line([(0, TITLEBAR), (W, TITLEBAR)], fill="#14171d", width=S)
-for i, c in enumerate(("#ec6a5e", "#f4bf4f", "#61c554")):
-    cx = (20 + i * 20) * S
-    d.ellipse([cx - 5 * S, TITLEBAR // 2 - 5 * S, cx + 5 * S, TITLEBAR // 2 + 5 * S], fill=c)
-tf = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", 11 * S)
-d.text(((20 + 3 * 20 + 10) * S, TITLEBAR // 2 - 7 * S), "morse — claude", font=tf, fill=TITLE)
+# faint rule above the status block, like the divider in Claude Code
+d.line([(PAD, PAD), (W - PAD, PAD)], fill=TOP_RULE, width=S)
 
 # Unicode braille (U+2800+n) encodes an 8-dot 2x4 grid via a bitmask.
 # Menlo has no braille glyph, so we draw the real dots ourselves — pixel-faithful
@@ -101,8 +97,9 @@ DOT_BIT = {  # bit -> (col, row) in a 2-wide, 4-tall cell
 def draw_braille(x, y, ch, color):
     n = ord(ch) - 0x2800
     r = 1.15 * S
-    # dot grid geometry inside one character cell
-    colx = [x + CW * 0.34, x + CW * 0.66]
+    # dot grid geometry: columns at 1/4 and 3/4 of the cell so the horizontal
+    # pitch is a uniform CW/2 across cell boundaries (no gap between cells).
+    colx = [x + CW * 0.25, x + CW * 0.75]
     top = y + asc * 0.22
     rowy = [top + j * (asc * 0.62 / 3.0) for j in range(4)]
     for bit, (c, rw) in DOT_BIT.items():
@@ -111,7 +108,7 @@ def draw_braille(x, y, ch, color):
             d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
 
 
-y = TITLEBAR + PAD
+y = PAD + TOPGAP
 for rl in render_lines:
     x = PAD
     for text, color, bold in rl:
@@ -119,11 +116,11 @@ for rl in render_lines:
             if 0x2800 <= ord(ch) <= 0x28FF:
                 draw_braille(x, y, ch, color)
             else:
-                d.text((x, y), ch, font=FONT, fill=color)
-                if bold:  # faux-bold: re-stamp with sub-pixel offset
-                    d.text((x + max(1, S // 2), y), ch, font=FONT, fill=color)
+                d.text((x, y), ch, font=(FONT_B if bold else FONT), fill=color)
             x += CW
     y += LH
 
+# Downsample the supersampled canvas for crisp, well-antialiased edges.
+img = img.resize((W // DS, H // DS), Image.LANCZOS)
 img.save(OUT)
-print(f"wrote {OUT} {W//S}x{H//S} (@{S}x = {W}x{H}px)")
+print(f"wrote {OUT} {W//S}x{H//S} (@{S//DS}x = {W//DS}x{H//DS}px)")
